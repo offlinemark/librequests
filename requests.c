@@ -103,11 +103,23 @@ void requests_post(CURL *curl, REQ *req, char **data, int data_size)
 {
     if (data_size % 2 != 0)
     {
-        printf("ERROR: Data size must be even");
+        printf("ERROR: Data size must be even\n");
         exit(1);
     }
 
+    long code = 0;
     char *encoded = post_encode(curl, data, data_size);
+
+    curl_easy_setopt(curl, CURLOPT_URL, req->url);
+    curl_easy_setopt(curl, CURLOPT_POST, 1);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, encoded);
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, "c-requests/0.1");
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, req);
+    curl_easy_perform(curl);
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
+
+    req->code = code;
 
     curl_free(encoded);
 }
