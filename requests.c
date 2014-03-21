@@ -1,9 +1,26 @@
 /*
+ * C-Requests Library
  * Mark Mossberg, 2014
  * mark.mossberg@gmail.com
  */
 
 #include "requests.h"
+
+CURL *requests_init(REQ *req, char *url)
+{
+    req->code = 0;
+    req->url = url;
+    req->text = calloc(1, 1);
+    req->size = 0;
+
+    return curl_easy_init();
+}
+
+void requests_close(CURL *curl, REQ *req)
+{
+    curl_easy_cleanup(curl);
+    free(req->text);
+}
 
 size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata)
 {
@@ -11,13 +28,19 @@ size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata)
 
     userdata->text = realloc(userdata->text, userdata->size + real_size + 1); // null byte!
     if (userdata->text == NULL)
+    {
         printf("ERROR: Memory allocation failed.\n");
+        exit(1);
+    }
 
     userdata->size += real_size;
 
     char *responsetext = strndup(content, size * nmemb);
     if (responsetext == NULL)
+    {
         printf("ERROR: Memory allocation failed.\n");
+        exit(1);
+    }
     strcat(userdata->text, responsetext);
 
     free(responsetext);
@@ -42,18 +65,49 @@ void requests_get(CURL *curl, REQ *req)
     req->code = code;
 }
 
-void requests_close(CURL *curl, REQ *req)
+char *post_encode(CURL *curl, char **data, int data_size)
 {
-    curl_easy_cleanup(curl);
-    free(req->text);
+
+    // loop through and get total sum of lengths
+    size_t total_size = 0;
+    int i = 0;
+    for (i = 0; i < data_size; i++) {
+        char *tmp = data[i];
+        size_t tmp_len = strlen(tmp);
+        total_size += tmp_len;
+    }
+
+    char encoded[total_size]; // clear junk bytes
+    snprintf(encoded, total_size, "%s", "");
+
+    // loop in groups of two, assembling key/val pairs
+    for (i = 0; i < data_size; i+=2) {
+        char *key = data[i];
+        char *val = data[i+1];
+        int offset = i == 0 ? 2 : 3; // =, \0 and maybe &
+        size_t term_size = strlen(key) + strlen(val) + offset;
+        char term[term_size];
+        if (i == 0)
+            snprintf(term, term_size, "%s=%s", key, val);
+        else
+            snprintf(term, term_size, "&%s=%s", key, val);
+        strncat(encoded, term, strlen(term));
+    }
+
+    char *full_encoded = curl_easy_escape(curl, encoded, strlen(encoded));
+
+    return full_encoded;
 }
 
-CURL *requests_init(REQ *req, char *url)
+void requests_post(CURL *curl, REQ *req, char **data, int data_size)
 {
-    req->code = 0;
-    req->url = url;
-    req->text = calloc(1, 1);
-    req->size = 0;
+    if (data_size % 2 != 0)
+    {
+        printf("ERROR: Data size must be even");
+        exit(1);
+    }
 
-    return curl_easy_init();
+    char *encoded = post_encode(curl, data, data_size);
+
+    curl_free(encoded);
 }
