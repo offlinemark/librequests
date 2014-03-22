@@ -117,29 +117,42 @@ char *url_encode(CURL *curl, char **data, int data_size)
 }
 
 /*
- * Performs POST request and populates req struct text member with request
- * response, code with response code, and size with size of response.
+ * Performs POST request using supplied data and populates req struct text
+ * member with request response, code with response code, and size with size
+ * of response. To submit no data, use NULL for data, and 0 for data_size.
  */
 void requests_post(CURL *curl, REQ *req, char **data, int data_size)
 {
-    if (data_size % 2 != 0) {
-        printf("ERROR: Data size must be even\n");
-        exit(1);
-    }
-
+    char *encoded = NULL;
+    struct curl_slist *slist = NULL;
     long code = 0;
-    char *encoded = url_encode(curl, data, data_size);
+    if (data != NULL) {
+        if (data_size % 2 != 0) {
+            printf("ERROR: Data size must be even\n");
+            exit(1);
+        }
+
+        encoded = url_encode(curl, data, data_size);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, encoded);
+    } else {
+        // content length header defaults to -1, which causes request to fail
+        // sometimes, so we need to manually set it to 0
+        slist = curl_slist_append(slist, "Content-Length: 0");
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
+    }
 
     common_opt(curl, req);
     curl_easy_setopt(curl, CURLOPT_POST, 1);
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, encoded);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "c-requests/0.1");
     curl_easy_perform(curl);
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
 
     req->code = code;
 
-    curl_free(encoded);
+    if (encoded != NULL)
+        curl_free(encoded);
+    if (slist != NULL)
+        curl_slist_free_all(slist);
 }
 
 /*

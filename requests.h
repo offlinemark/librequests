@@ -22,6 +22,7 @@ void requests_close(CURL *curl, REQ *req);
 void requests_get(CURL *curl, REQ *req);
 void requests_post(CURL *curl, REQ *req, char **data, int data_size);
 void common_opt(CURL *curl, REQ *req);
+char *url_encode(CURL *curl, char **data, int data_size);
 size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata);
 
 #endif
