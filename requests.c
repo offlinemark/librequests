@@ -56,7 +56,7 @@ void requests_get(CURL *curl, REQ *req)
 
     long code = 0;
 
-    curl_easy_setopt(curl, CURLOPT_URL, req->url);
+    common_opt(curl, req);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, req);
     curl_easy_perform(curl);
@@ -110,16 +110,21 @@ void requests_post(CURL *curl, REQ *req, char **data, int data_size)
     long code = 0;
     char *encoded = post_encode(curl, data, data_size);
 
-    curl_easy_setopt(curl, CURLOPT_URL, req->url);
+    common_opt(curl, req);
     curl_easy_setopt(curl, CURLOPT_POST, 1);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, encoded);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "c-requests/0.1");
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, req);
     curl_easy_perform(curl);
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
 
     req->code = code;
 
     curl_free(encoded);
+}
+
+void common_opt(CURL *curl, REQ *req)
+{
+    curl_easy_setopt(curl, CURLOPT_URL, req->url);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, req);
 }
