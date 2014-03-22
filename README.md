@@ -31,18 +31,18 @@ int main(int argc, const char *argv[])
 }
 ```
 
-Save the above as `test.c`, and make sure `requests.c` and `requests.h`
+Save the above as `get.c`, and make sure `requests.c` and `requests.h`
 are in the same directory. Also make sure you have gcc or equivalent and
 libcurl installed. Then compile it using:
 
-```
-$ gcc -o test test.c requests.c -l curl
+```bash
+$ gcc -o get get.c requests.c -l curl
 ```
 
 And you should see:
 
 ```bash
-$ ./test
+$ ./get
 Request URL: http://example.com
 Response Code: 200
 Response Size: 1270
@@ -52,4 +52,22 @@ Response Body:
 <head>
     <title>Example Domain</title>
     ...
+```
+
+For more examples, look in the "examples" directory.
+
+## tests
+
+C-Requests uses the [greatest](https://github.com/silentbicycle/greatest) C
+unit testing library, written by Scott Vokes. To run tests, just execute
+
+```bash
+$ make
+```
+
+which will compile `test.c`. It'll also run it, the first time. If make says
+test is up to date, then you can run tests with
+
+```bash
+$ ./test
 ```
