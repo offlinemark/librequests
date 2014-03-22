@@ -1,11 +1,13 @@
 /*
- * C-Requests Library
- * Mark Mossberg, 2014
- * mark.mossberg@gmail.com
+ * requests.c -- c-requests: libcurl wrapper implementation
+ * Copyright (c) 2014 Mark Mossberg
  */
 
 #include "requests.h"
 
+/*
+ * Initializes requests struct data members
+ */
 CURL *requests_init(REQ *req, char *url)
 {
     req->code = 0;
@@ -16,19 +18,25 @@ CURL *requests_init(REQ *req, char *url)
     return curl_easy_init();
 }
 
+/*
+ * Calls curl clean up and free allocated memory
+ */
 void requests_close(CURL *curl, REQ *req)
 {
     curl_easy_cleanup(curl);
     free(req->text);
 }
 
+/*
+ * Callback function for requests, may be called multiple times per request.
+ * Allocates memory and assembles response data.
+ */
 size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata)
 {
     size_t real_size = size * nmemb;
 
     userdata->text = realloc(userdata->text, userdata->size + real_size + 1); // null byte!
-    if (userdata->text == NULL)
-    {
+    if (userdata->text == NULL) {
         printf("ERROR: Memory allocation failed.\n");
         exit(1);
     }
@@ -36,8 +44,7 @@ size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata)
     userdata->size += real_size;
 
     char *responsetext = strndup(content, size * nmemb);
-    if (responsetext == NULL)
-    {
+    if (responsetext == NULL) {
         printf("ERROR: Memory allocation failed.\n");
         exit(1);
     }
@@ -47,6 +54,10 @@ size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata)
     return size * nmemb;
 }
 
+/*
+ * Performs GET request and populates req struct text member with request
+ * response, code with response code, and size with size of response.
+ */
 void requests_get(CURL *curl, REQ *req)
 {
     if (req->url == NULL) {
@@ -65,7 +76,13 @@ void requests_get(CURL *curl, REQ *req)
     req->code = code;
 }
 
-char *post_encode(CURL *curl, char **data, int data_size)
+/*
+ * Url encoding function. Takes as input an array of char strings and the
+ * size of the array. The array should consist of keys and the corresponding
+ * value immediately after in the array. There must be an even number of
+ * array elements (one value for every key).
+ */
+char *url_encode(CURL *curl, char **data, int data_size)
 {
 
     // loop through and get total sum of lengths
@@ -99,16 +116,19 @@ char *post_encode(CURL *curl, char **data, int data_size)
     return full_encoded;
 }
 
+/*
+ * Performs POST request and populates req struct text member with request
+ * response, code with response code, and size with size of response.
+ */
 void requests_post(CURL *curl, REQ *req, char **data, int data_size)
 {
-    if (data_size % 2 != 0)
-    {
+    if (data_size % 2 != 0) {
         printf("ERROR: Data size must be even\n");
         exit(1);
     }
 
     long code = 0;
-    char *encoded = post_encode(curl, data, data_size);
+    char *encoded = url_encode(curl, data, data_size);
 
     common_opt(curl, req);
     curl_easy_setopt(curl, CURLOPT_POST, 1);
@@ -122,6 +142,9 @@ void requests_post(CURL *curl, REQ *req, char **data, int data_size)
     curl_free(encoded);
 }
 
+/*
+ * Utility function for executing common curl options.
+ */
 void common_opt(CURL *curl, REQ *req)
 {
     curl_easy_setopt(curl, CURLOPT_URL, req->url);

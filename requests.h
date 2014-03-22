@@ -2,9 +2,8 @@
 #define REQUESTS_H
 
 /*
- * C-Requests Library
- * Mark Mossberg, 2014
- * mark.mossberg@gmail.com
+ * requests.h -- c-requests: header file
+ * Copyright (c) 2014 Mark Mossberg
  */
 
 #include <string.h>
