@@ -59,6 +59,27 @@ TEST post_nodata()
     PASS();
 }
 
+TEST put()
+{
+    long code = 200;
+    char *data[] = {
+        "apple", "red",
+        "banana", "yellow"
+    };
+    int data_size = sizeof(data)/sizeof(char*);
+
+    REQ req;
+    CURL *curl = requests_init(&req, "http://www.posttestserver.com/post.php");
+
+    requests_put(curl, &req, data, data_size);
+    test_print(&req);
+
+    ASSERT_EQ(code, req.code);
+
+    requests_close(curl, &req);
+    PASS();
+}
+
 TEST urlencode()
 {
     CURL *curl = curl_easy_init();
@@ -81,6 +102,7 @@ SUITE(tests)
     RUN_TEST(get);
     RUN_TEST(post);
     RUN_TEST(post_nodata);
+    RUN_TEST(put);
     RUN_TEST(urlencode);
 }
 

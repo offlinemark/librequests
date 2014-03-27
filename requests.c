@@ -137,16 +137,42 @@ char *url_encode(CURL *curl, char **data, int data_size)
     return full_encoded;
 }
 
-/*
- * Performs POST request using supplied data and populates req struct text
- * member with request response, code with response code, and size with size
- * of response. To submit no data, use NULL for data, and 0 for data_size.
- */
 void requests_post(CURL *curl, REQ *req, char **data, int data_size)
+{
+    requests_pt(curl, req, data, data_size, 0);
+}
+
+void requests_put(CURL *curl, REQ *req, char **data, int data_size)
+{
+    requests_pt(curl, req, data, data_size, 1);
+}
+
+/*
+ * Utility function that performs POST or PUT request using supplied data and
+ * populates req struct text member with request response, code with response
+ * code, and size with size of response. To submit no data, use NULL for data,
+ * and 0 for data_size.
+ *
+ * Since PUT and POST are only semantically different, when put_flag is 1,
+ * a PUT request will be submitted instead of post. When it's 0, will use a
+ * normal POST.
+ *
+ * Typically this function isn't used directly, use requests_post() or
+ * requests_put() instead.
+ */
+void requests_pt(CURL *curl, REQ *req, char **data, int data_size,
+                   int put_flag)
 {
     char *encoded = NULL;
     struct curl_slist *slist = NULL;
     long code = 0;
+
+    if (put_flag != 0 && put_flag != 1)
+    {
+        printf("ERROR: Invalid PUT request flag\n");
+        exit(1);
+    }
+
     if (data != NULL) {
         if (data_size % 2 != 0) {
             printf("ERROR: Data size must be even\n");
@@ -163,7 +189,12 @@ void requests_post(CURL *curl, REQ *req, char **data, int data_size)
     }
 
     common_opt(curl, req);
-    curl_easy_setopt(curl, CURLOPT_POST, 1);
+    if (put_flag)
+        // use custom request instead of dedicated PUT, because dedicated
+        // PUT doesn't work with arbitrary request body data
+        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
+    else
+        curl_easy_setopt(curl, CURLOPT_POST, 1);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "c-requests/0.1");
     curl_easy_perform(curl);
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
