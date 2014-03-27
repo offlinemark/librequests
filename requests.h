@@ -41,7 +41,10 @@ typedef struct {
 CURL *requests_init(REQ *req, char *url);
 void requests_close(CURL *curl, REQ *req);
 void requests_get(CURL *curl, REQ *req);
+void requests_pt(CURL *curl, REQ *req, char **data, int data_size,
+                   int put_flag);
 void requests_post(CURL *curl, REQ *req, char **data, int data_size);
+void requests_put(CURL *curl, REQ *req, char **data, int data_size);
 void common_opt(CURL *curl, REQ *req);
 char *url_encode(CURL *curl, char **data, int data_size);
 size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata);
