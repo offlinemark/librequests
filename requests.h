@@ -2,7 +2,7 @@
 #define REQUESTS_H
 
 /*
- * requests.h -- c-requests: header file
+ * requests.h -- librequests: header file
  *
  * The MIT License (MIT)
  *
@@ -30,6 +30,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <curl/curl.h>
+#include <sys/utsname.h>
 
 typedef struct {
     long code;
@@ -48,5 +49,6 @@ void requests_put(CURL *curl, REQ *req, char **data, int data_size);
 void common_opt(CURL *curl, REQ *req);
 char *url_encode(CURL *curl, char **data, int data_size);
 size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata);
+char *user_agent();
 
 #endif

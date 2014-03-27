@@ -1,4 +1,4 @@
-# c-requests
+# librequests
 
 Just because you're writing in C, doesn't mean everything has to be painful.
 
@@ -58,16 +58,10 @@ For more examples, look in the "examples" directory.
 
 ## tests
 
-C-Requests uses the [greatest](https://github.com/silentbicycle/greatest) C
+librequests uses the [greatest](https://github.com/silentbicycle/greatest) C
 unit testing library, written by Scott Vokes. To run tests, just execute
 
 ```bash
 $ make
-```
-
-which will compile `test.c`. It'll also run it, the first time. If make says
-test is up to date, then you can run tests with
-
-```bash
 $ ./test
 ```

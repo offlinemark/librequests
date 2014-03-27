@@ -1,5 +1,5 @@
 /*
- * requests.c -- c-requests: libcurl wrapper implementation
+ * requests.c -- librequests: libcurl wrapper implementation
  *
  * The MIT License (MIT)
  *
@@ -163,6 +163,7 @@ void requests_put(CURL *curl, REQ *req, char **data, int data_size)
 void requests_pt(CURL *curl, REQ *req, char **data, int data_size,
                    int put_flag)
 {
+    char *ua = user_agent();
     char *encoded = NULL;
     struct curl_slist *slist = NULL;
     long code = 0;
@@ -195,7 +196,7 @@ void requests_pt(CURL *curl, REQ *req, char **data, int data_size,
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
     else
         curl_easy_setopt(curl, CURLOPT_POST, 1);
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, "c-requests/0.1");
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, ua);
     curl_easy_perform(curl);
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
 
@@ -205,6 +206,7 @@ void requests_pt(CURL *curl, REQ *req, char **data, int data_size,
         curl_free(encoded);
     if (slist != NULL)
         curl_slist_free_all(slist);
+    free(ua);
 }
 
 /*
@@ -215,4 +217,25 @@ void common_opt(CURL *curl, REQ *req)
     curl_easy_setopt(curl, CURLOPT_URL, req->url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, req);
+}
+
+/*
+ * Utility function for creating custom user agent.
+ */
+char *user_agent()
+{
+    int ua_size = 3; // ' ', \, \0
+    char *basic = "librequests/0.1";
+    ua_size += strlen(basic);
+    struct utsname name;
+    uname(&name);
+    char *kernel = name.sysname;
+    ua_size += strlen(kernel);
+    char *version = name.release;
+    ua_size += strlen(version);
+
+    char *ua = malloc(ua_size);
+    snprintf(ua, ua_size, "%s %s/%s", basic, kernel, version);
+
+    return ua;
 }
