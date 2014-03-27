@@ -27,6 +27,7 @@
  * THE SOFTWARE.
  */
 
+#include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 #include <curl/curl.h>

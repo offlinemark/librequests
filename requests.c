@@ -36,6 +36,8 @@ CURL *requests_init(REQ *req, char *url)
     req->text = calloc(1, 1);
     req->size = 0;
 
+    assert(req->text != NULL && "ERROR: Memory allocation failed");
+
     return curl_easy_init();
 }
 
@@ -57,18 +59,13 @@ size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata)
     size_t real_size = size * nmemb;
 
     userdata->text = realloc(userdata->text, userdata->size + real_size + 1); // null byte!
-    if (userdata->text == NULL) {
-        printf("ERROR: Memory allocation failed.\n");
-        exit(1);
-    }
+    assert(userdata->text != NULL && "ERROR: Memory allocation failed");
 
     userdata->size += real_size;
 
     char *responsetext = strndup(content, size * nmemb);
-    if (responsetext == NULL) {
-        printf("ERROR: Memory allocation failed.\n");
-        exit(1);
-    }
+    assert(responsetext != NULL && "ERROR: Memory allocation failed");
+
     strcat(userdata->text, responsetext);
 
     free(responsetext);
@@ -81,10 +78,7 @@ size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata)
  */
 void requests_get(CURL *curl, REQ *req)
 {
-    if (req->url == NULL) {
-        printf("ERROR: No URL provided.\n");
-        exit(1);
-    }
+    assert(req->url != NULL && "ERROR: No URL provided");
 
     long code = 0;
 
@@ -168,17 +162,11 @@ void requests_pt(CURL *curl, REQ *req, char **data, int data_size,
     struct curl_slist *slist = NULL;
     long code = 0;
 
-    if (put_flag != 0 && put_flag != 1)
-    {
-        printf("ERROR: Invalid PUT request flag\n");
-        exit(1);
-    }
+    assert((put_flag == 0 || put_flag == 1) &&
+           "ERROR: Invalid PUT request flag");
 
     if (data != NULL) {
-        if (data_size % 2 != 0) {
-            printf("ERROR: Data size must be even\n");
-            exit(1);
-        }
+        assert(data_size % 2 == 0 && "ERROR: Data size must be even");
 
         encoded = url_encode(curl, data, data_size);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, encoded);
@@ -235,6 +223,7 @@ char *user_agent()
     ua_size += strlen(version);
 
     char *ua = malloc(ua_size);
+    assert(ua != NULL && "ERROR: Memory allocation failed");
     snprintf(ua, ua_size, "%s %s/%s", basic, kernel, version);
 
     return ua;
