@@ -2,6 +2,12 @@
 #include "requests.h"
 #include "greatest.h"
 
+#ifdef _DEBUG_
+# define DEBUG(msg) puts(msg)
+#else
+# define DEBUG(msg)
+#endif
+
 void test_print(REQ *req)
 {
     printf("Request URL: %s\n", req->url);
@@ -72,7 +78,6 @@ TEST put()
     CURL *curl = requests_init(&req, "http://www.posttestserver.com/post.php");
 
     requests_put(curl, &req, data, data_size);
-    test_print(&req);
 
     ASSERT_EQ(code, req.code);
 
@@ -89,10 +94,12 @@ TEST urlencode()
     };
     int data_size = sizeof(data)/sizeof(char*);
     char *ideal = "apple%3Dred%26banana%3Dyellow";
-
     char *test = url_encode(curl, data, data_size);
 
     ASSERT(!strcmp(ideal, test));
+
+    curl_free(test);
+    curl_easy_cleanup(curl);
 
     PASS();
 }
