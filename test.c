@@ -96,7 +96,7 @@ TEST urlencode()
     char *ideal = "apple%3Dred%26banana%3Dyellow";
     char *test = url_encode(curl, data, data_size);
 
-    ASSERT(!strcmp(ideal, test));
+    ASSERT(strcmp(ideal, test) == 0);
 
     curl_free(test);
     curl_easy_cleanup(curl);
