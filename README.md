@@ -7,7 +7,7 @@ attempts to simplify submitting simple HTTP requests.
 
 *Disclaimer: I'm learning C through this project, so it's entirely possible
 that this code uses bad practices, is incorrect, etc. If you find something,
-do [let me know](mailto:mark.mossberg@gmail.com).*
+do [let me know](http://github.com/markmossberg/librequests/issues).*
 
 ## example
 
