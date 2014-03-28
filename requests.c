@@ -97,8 +97,9 @@ void requests_get(CURL *curl, REQ *req)
  * value immediately after in the array. There must be an even number of
  * array elements (one value for every key).
  */
-char *url_encode(CURL *curl, char **data, int data_size)
+char *requests_url_encode(CURL *curl, char **data, int data_size)
 {
+    assert(data_size % 2 == 0 && "ERROR: Data size must be even");
 
     // loop through and get total sum of lengths
     size_t total_size = 0;
@@ -131,26 +132,26 @@ char *url_encode(CURL *curl, char **data, int data_size)
     return full_encoded;
 }
 
-void requests_post(CURL *curl, REQ *req, char **data, int data_size)
+void requests_post(CURL *curl, REQ *req, char *data)
 {
-    requests_pt(curl, req, data, data_size, NULL, 0, 0);
+    requests_pt(curl, req, data, NULL, 0, 0);
 }
 
-void requests_put(CURL *curl, REQ *req, char **data, int data_size)
+void requests_put(CURL *curl, REQ *req, char *data)
 {
-    requests_pt(curl, req, data, data_size, NULL, 0, 1);
+    requests_pt(curl, req, data, NULL, 0, 1);
 }
 
-void requests_post_headers(CURL *curl, REQ *req, char **data, int data_size,
-                           char **headers, int headers_size)
+void requests_post_headers(CURL *curl, REQ *req, char *data, char **headers,
+                           int headers_size)
 {
-    requests_pt(curl, req, data, data_size, headers, headers_size, 0);
+    requests_pt(curl, req, data, headers, headers_size, 0);
 }
 
-void requests_put_headers(CURL *curl, REQ *req, char **data, int data_size,
-                          char **headers, int headers_size)
+void requests_put_headers(CURL *curl, REQ *req, char *data, char **headers,
+                          int headers_size)
 {
-    requests_pt(curl, req, data, data_size, headers, headers_size, 1);
+    requests_pt(curl, req, data, headers, headers_size, 1);
 }
 
 /*
@@ -166,8 +167,8 @@ void requests_put_headers(CURL *curl, REQ *req, char **data, int data_size,
  * Typically this function isn't used directly, use requests_post() or
  * requests_put() instead.
  */
-void requests_pt(CURL *curl, REQ *req, char **data, int data_size,
-                 char **headers, int headers_size, int put_flag)
+void requests_pt(CURL *curl, REQ *req, char *data, char **headers,
+                 int headers_size, int put_flag)
 {
     char *ua = user_agent();
     char *encoded = NULL;
@@ -179,10 +180,7 @@ void requests_pt(CURL *curl, REQ *req, char **data, int data_size,
 
     // body data
     if (data != NULL) {
-        assert(data_size % 2 == 0 && "ERROR: Data size must be even");
-
-        encoded = url_encode(curl, data, data_size);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, encoded);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
     } else {
         // content length header defaults to -1, which causes request to fail
         // sometimes, so we need to manually set it to 0

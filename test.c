@@ -43,10 +43,12 @@ TEST post()
 
     REQ req;
     CURL *curl = requests_init(&req, "http://www.posttestserver.com/post.php");
-    requests_post(curl, &req, data, data_size);
+    char *body = requests_url_encode(curl, data, data_size);
+    requests_post(curl, &req, body);
 
     ASSERT_EQ(code, req.code);
 
+    curl_free(body);
     requests_close(curl, &req);
     PASS();
 }
@@ -57,7 +59,7 @@ TEST post_nodata()
 
     REQ req;
     CURL *curl = requests_init(&req, "http://www.posttestserver.com/post.php");
-    requests_post(curl, &req, NULL, 0);
+    requests_post(curl, &req, NULL);
 
     ASSERT_EQ(code, req.code);
 
@@ -76,7 +78,7 @@ TEST post_headers()
 
     REQ req;
     CURL *curl = requests_init(&req, "http://www.posttestserver.com/post.php");
-    requests_post_headers(curl, &req, NULL, 0, headers, headers_size);
+    requests_post_headers(curl, &req, NULL, headers, headers_size);
 
     ASSERT_EQ(code, req.code);
 
@@ -95,11 +97,12 @@ TEST put()
 
     REQ req;
     CURL *curl = requests_init(&req, "http://www.posttestserver.com/post.php");
-
-    requests_put(curl, &req, data, data_size);
+    char *body = requests_url_encode(curl, data, data_size);
+    requests_put(curl, &req, body);
 
     ASSERT_EQ(code, req.code);
 
+    curl_free(body);
     requests_close(curl, &req);
     PASS();
 }
@@ -113,7 +116,7 @@ TEST urlencode()
     };
     int data_size = sizeof(data)/sizeof(char*);
     char *ideal = "apple%3Dred%26banana%3Dyellow";
-    char *test = url_encode(curl, data, data_size);
+    char *test = requests_url_encode(curl, data, data_size);
 
     ASSERT(strcmp(ideal, test) == 0);
 
