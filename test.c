@@ -65,6 +65,25 @@ TEST post_nodata()
     PASS();
 }
 
+TEST post_headers()
+{
+    long code = 200;
+    char *headers[] = {
+        "Content-Type: application/json",
+        "Content-Hype: dude"
+    };
+    int headers_size = sizeof(headers)/sizeof(char*);
+
+    REQ req;
+    CURL *curl = requests_init(&req, "http://www.posttestserver.com/post.php");
+    requests_post_headers(curl, &req, NULL, 0, headers, headers_size);
+
+    ASSERT_EQ(code, req.code);
+
+    requests_close(curl, &req);
+    PASS();
+}
+
 TEST put()
 {
     long code = 200;
@@ -109,6 +128,7 @@ SUITE(tests)
     RUN_TEST(get);
     RUN_TEST(post);
     RUN_TEST(post_nodata);
+    RUN_TEST(post_headers);
     RUN_TEST(put);
     RUN_TEST(urlencode);
 }

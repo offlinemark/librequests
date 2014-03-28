@@ -133,12 +133,24 @@ char *url_encode(CURL *curl, char **data, int data_size)
 
 void requests_post(CURL *curl, REQ *req, char **data, int data_size)
 {
-    requests_pt(curl, req, data, data_size, 0);
+    requests_pt(curl, req, data, data_size, NULL, 0, 0);
 }
 
 void requests_put(CURL *curl, REQ *req, char **data, int data_size)
 {
-    requests_pt(curl, req, data, data_size, 1);
+    requests_pt(curl, req, data, data_size, NULL, 0, 1);
+}
+
+void requests_post_headers(CURL *curl, REQ *req, char **data, int data_size,
+                           char **headers, int headers_size)
+{
+    requests_pt(curl, req, data, data_size, headers, headers_size, 0);
+}
+
+void requests_put_headers(CURL *curl, REQ *req, char **data, int data_size,
+                          char **headers, int headers_size)
+{
+    requests_pt(curl, req, data, data_size, headers, headers_size, 1);
 }
 
 /*
@@ -155,7 +167,7 @@ void requests_put(CURL *curl, REQ *req, char **data, int data_size)
  * requests_put() instead.
  */
 void requests_pt(CURL *curl, REQ *req, char **data, int data_size,
-                   int put_flag)
+                 char **headers, int headers_size, int put_flag)
 {
     char *ua = user_agent();
     char *encoded = NULL;
@@ -165,6 +177,7 @@ void requests_pt(CURL *curl, REQ *req, char **data, int data_size,
     assert((put_flag == 0 || put_flag == 1) &&
            "ERROR: Invalid PUT request flag");
 
+    // body data
     if (data != NULL) {
         assert(data_size % 2 == 0 && "ERROR: Data size must be even");
 
@@ -174,6 +187,16 @@ void requests_pt(CURL *curl, REQ *req, char **data, int data_size,
         // content length header defaults to -1, which causes request to fail
         // sometimes, so we need to manually set it to 0
         slist = curl_slist_append(slist, "Content-Length: 0");
+        if (headers == NULL)
+            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
+    }
+
+    // headers
+    if (headers != NULL) {
+        int i = 0;
+        for (i = 0; i < headers_size; i++) {
+            slist = curl_slist_append(slist, headers[i]);
+        }
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
     }
 
