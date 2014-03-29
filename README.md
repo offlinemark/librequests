@@ -30,9 +30,9 @@ static C library that you can compile your own code against.
 int main(int argc, const char *argv[])
 {
     REQ req; // declare struct used to store data
-    CURL *curl = requests_init(&req, "http://example.com"); // setup
+    CURL *curl = requests_init(&req); // setup
 
-    requests_get(curl, &req); // submit GET request
+    requests_get(curl, &req, "http://example.com"); // submit GET request
     printf("Request URL: %s\n", req.url);
     printf("Response Code: %lu\n", req.code);
     printf("Response Size: %zu\n", req.size);
@@ -97,3 +97,6 @@ $ make test-debug
 for debug statements that can easily be compiled in
 or out. In your code, simply put `DEBUG("your message");` where the accepted
 parameters are just like the ones for `printf()`.
+
+
+[![Analytics](https://ga-beacon.appspot.com/UA-36552439-3/librequests/readme)](https://github.com/igrigorik/ga-beacon)
