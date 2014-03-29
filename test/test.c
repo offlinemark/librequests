@@ -3,9 +3,9 @@
 #include "greatest.h"
 
 #ifdef _DEBUG_
-# define DEBUG(msg) puts(msg)
+# define DEBUG(M, ...) fprintf(stderr, "DEBUG %s:%d: " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #else
-# define DEBUG(msg)
+# define DEBUG(M, ...)
 #endif
 
 void test_print(REQ *req)
