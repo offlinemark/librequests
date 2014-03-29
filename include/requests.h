@@ -40,17 +40,17 @@ typedef struct {
     size_t size;
 } REQ;
 
-CURL *requests_init(REQ *req, char *url);
+CURL *requests_init(REQ *req);
 void requests_close(CURL *curl, REQ *req);
-void requests_get(CURL *curl, REQ *req);
-void requests_pt(CURL *curl, REQ *req, char *data, char **headers,
+void requests_get(CURL *curl, REQ *req, char *url);
+void requests_pt(CURL *curl, REQ *req, char *url, char *data, char **headers,
                  int headers_size, int put_flag);
-void requests_post(CURL *curl, REQ *req, char *data);
-void requests_put(CURL *curl, REQ *req, char *data);
-void requests_post_headers(CURL *curl, REQ *req, char *data, char **headers,
-                           int headers_size);
-void requests_put_headers(CURL *curl, REQ *req, char *data, char **headers,
-                          int headers_size);
+void requests_post(CURL *curl, REQ *req, char *url, char *data);
+void requests_put(CURL *curl, REQ *req, char *url, char *data);
+void requests_post_headers(CURL *curl, REQ *req, char *url, char *data,
+                           char **headers, int headers_size);
+void requests_put_headers(CURL *curl, REQ *req, char *url, char *data,
+                          char **headers, int headers_size);
 void common_opt(CURL *curl, REQ *req);
 char *requests_url_encode(CURL *curl, char **data, int data_size);
 size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata);

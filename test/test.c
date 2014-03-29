@@ -8,6 +8,9 @@
 # define DEBUG(M, ...)
 #endif
 
+char *example = "http://example.com";
+char *posttestserver = "http://posttestserver.com/post.php";
+
 void test_print(REQ *req)
 {
     printf("Request URL: %s\n", req->url);
@@ -22,8 +25,8 @@ TEST get()
     size_t size = 1270;
 
     REQ req;
-    CURL *curl = requests_init(&req, "http://example.com");
-    requests_get(curl, &req);
+    CURL *curl = requests_init(&req);
+    requests_get(curl, &req, example);
 
     ASSERT_EQ(code, req.code);
     ASSERT_EQ(size, req.size);
@@ -42,9 +45,9 @@ TEST post()
     int data_size = sizeof(data)/sizeof(char*);
 
     REQ req;
-    CURL *curl = requests_init(&req, "http://www.posttestserver.com/post.php");
+    CURL *curl = requests_init(&req);
     char *body = requests_url_encode(curl, data, data_size);
-    requests_post(curl, &req, body);
+    requests_post(curl, &req, posttestserver, body);
 
     ASSERT_EQ(code, req.code);
 
@@ -58,8 +61,8 @@ TEST post_nodata()
     long code = 200;
 
     REQ req;
-    CURL *curl = requests_init(&req, "http://www.posttestserver.com/post.php");
-    requests_post(curl, &req, NULL);
+    CURL *curl = requests_init(&req);
+    requests_post(curl, &req, posttestserver, NULL);
 
     ASSERT_EQ(code, req.code);
 
@@ -77,8 +80,8 @@ TEST post_headers()
     int headers_size = sizeof(headers)/sizeof(char*);
 
     REQ req;
-    CURL *curl = requests_init(&req, "http://www.posttestserver.com/post.php");
-    requests_post_headers(curl, &req, NULL, headers, headers_size);
+    CURL *curl = requests_init(&req);
+    requests_post_headers(curl, &req, posttestserver, NULL, headers, headers_size);
 
     ASSERT_EQ(code, req.code);
 
@@ -96,9 +99,9 @@ TEST put()
     int data_size = sizeof(data)/sizeof(char*);
 
     REQ req;
-    CURL *curl = requests_init(&req, "http://www.posttestserver.com/post.php");
+    CURL *curl = requests_init(&req);
     char *body = requests_url_encode(curl, data, data_size);
-    requests_put(curl, &req, body);
+    requests_put(curl, &req, posttestserver, body);
 
     ASSERT_EQ(code, req.code);
 

@@ -29,10 +29,10 @@
 /*
  * Initializes requests struct data members
  */
-CURL *requests_init(REQ *req, char *url)
+CURL *requests_init(REQ *req)
 {
     req->code = 0;
-    req->url = url;
+    req->url = NULL;
     req->text = calloc(1, 1);
     req->size = 0;
 
@@ -76,8 +76,9 @@ size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata)
  * Performs GET request and populates req struct text member with request
  * response, code with response code, and size with size of response.
  */
-void requests_get(CURL *curl, REQ *req)
+void requests_get(CURL *curl, REQ *req, char *url)
 {
+    req->url = url;
     assert(req->url != NULL && "ERROR: No URL provided");
 
     long code = 0;
@@ -132,26 +133,26 @@ char *requests_url_encode(CURL *curl, char **data, int data_size)
     return full_encoded;
 }
 
-void requests_post(CURL *curl, REQ *req, char *data)
+void requests_post(CURL *curl, REQ *req, char *url, char *data)
 {
-    requests_pt(curl, req, data, NULL, 0, 0);
+    requests_pt(curl, req, url, data, NULL, 0, 0);
 }
 
-void requests_put(CURL *curl, REQ *req, char *data)
+void requests_put(CURL *curl, REQ *req, char *url, char *data)
 {
-    requests_pt(curl, req, data, NULL, 0, 1);
+    requests_pt(curl, req, url, data, NULL, 0, 1);
 }
 
-void requests_post_headers(CURL *curl, REQ *req, char *data, char **headers,
-                           int headers_size)
+void requests_post_headers(CURL *curl, REQ *req, char *url, char *data,
+                           char **headers, int headers_size)
 {
-    requests_pt(curl, req, data, headers, headers_size, 0);
+    requests_pt(curl, req, url, data, headers, headers_size, 0);
 }
 
-void requests_put_headers(CURL *curl, REQ *req, char *data, char **headers,
-                          int headers_size)
+void requests_put_headers(CURL *curl, REQ *req, char *url, char *data,
+                          char **headers, int headers_size)
 {
-    requests_pt(curl, req, data, headers, headers_size, 1);
+    requests_pt(curl, req, url, data, headers, headers_size, 1);
 }
 
 /*
@@ -167,14 +168,16 @@ void requests_put_headers(CURL *curl, REQ *req, char *data, char **headers,
  * Typically this function isn't used directly, use requests_post() or
  * requests_put() instead.
  */
-void requests_pt(CURL *curl, REQ *req, char *data, char **headers,
+void requests_pt(CURL *curl, REQ *req, char *url, char *data, char **headers,
                  int headers_size, int put_flag)
 {
     char *ua = user_agent();
     char *encoded = NULL;
     struct curl_slist *slist = NULL;
     long code = 0;
+    req->url = url;
 
+    assert(req->url != NULL && "ERROR: No URL provided.");
     assert((put_flag == 0 || put_flag == 1) &&
            "ERROR: Invalid PUT request flag");
 
