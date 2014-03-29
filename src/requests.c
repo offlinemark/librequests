@@ -24,7 +24,7 @@
  * THE SOFTWARE.
  */
 
-#include "requests.h"
+#include "../include/requests.h"
 
 /*
  * Initializes requests struct data members
