@@ -26,6 +26,6 @@ int main(int argc, const char *argv[])
     printf("Response Body:\n%s", req.text);
 
     curl_free(body); // necessary, due to internal curl allocation
-    requests_close(curl, &req); // clean up
+    requests_close(&req); // clean up
     return 0;
 }

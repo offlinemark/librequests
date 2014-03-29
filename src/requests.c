@@ -26,11 +26,18 @@
 
 #include "../include/requests.h"
 
+const REQ REQ_DEFAULT = {0, NULL, NULL, 0};
+
 /*
  * Initializes requests struct data members
  */
 CURL *requests_init(REQ *req)
 {
+    // if this is not their first request
+    if (req->url != NULL) {
+        free(req->text);
+    }
+
     req->code = 0;
     req->url = NULL;
     req->text = calloc(1, 1);
@@ -44,9 +51,8 @@ CURL *requests_init(REQ *req)
 /*
  * Calls curl clean up and free allocated memory
  */
-void requests_close(CURL *curl, REQ *req)
+void requests_close(REQ *req)
 {
-    curl_easy_cleanup(curl);
     free(req->text);
 }
 
@@ -69,7 +75,7 @@ size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata)
     strcat(userdata->text, responsetext);
 
     free(responsetext);
-    return size * nmemb;
+    return real_size;
 }
 
 /*
@@ -90,6 +96,7 @@ void requests_get(CURL *curl, REQ *req, char *url)
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
 
     req->code = code;
+    curl_easy_cleanup(curl);
 }
 
 /*
@@ -219,6 +226,7 @@ void requests_pt(CURL *curl, REQ *req, char *url, char *data, char **headers,
     if (slist != NULL)
         curl_slist_free_all(slist);
     free(ua);
+    curl_easy_cleanup(curl);
 }
 
 /*

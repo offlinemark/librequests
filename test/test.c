@@ -24,14 +24,14 @@ TEST get()
     long code = 200;
     size_t size = 1270;
 
-    REQ req;
+    REQ req = REQ_DEFAULT;
     CURL *curl = requests_init(&req);
     requests_get(curl, &req, example);
 
     ASSERT_EQ(code, req.code);
     ASSERT_EQ(size, req.size);
 
-    requests_close(curl, &req);
+    requests_close(&req);
     PASS();
 }
 
@@ -44,7 +44,7 @@ TEST post()
     };
     int data_size = sizeof(data)/sizeof(char*);
 
-    REQ req;
+    REQ req = REQ_DEFAULT;
     CURL *curl = requests_init(&req);
     char *body = requests_url_encode(curl, data, data_size);
     requests_post(curl, &req, posttestserver, body);
@@ -52,7 +52,7 @@ TEST post()
     ASSERT_EQ(code, req.code);
 
     curl_free(body);
-    requests_close(curl, &req);
+    requests_close(&req);
     PASS();
 }
 
@@ -60,13 +60,13 @@ TEST post_nodata()
 {
     long code = 200;
 
-    REQ req;
+    REQ req = REQ_DEFAULT;
     CURL *curl = requests_init(&req);
     requests_post(curl, &req, posttestserver, NULL);
 
     ASSERT_EQ(code, req.code);
 
-    requests_close(curl, &req);
+    requests_close(&req);
     PASS();
 }
 
@@ -79,13 +79,13 @@ TEST post_headers()
     };
     int headers_size = sizeof(headers)/sizeof(char*);
 
-    REQ req;
+    REQ req = REQ_DEFAULT;
     CURL *curl = requests_init(&req);
     requests_post_headers(curl, &req, posttestserver, NULL, headers, headers_size);
 
     ASSERT_EQ(code, req.code);
 
-    requests_close(curl, &req);
+    requests_close(&req);
     PASS();
 }
 
@@ -98,7 +98,7 @@ TEST put()
     };
     int data_size = sizeof(data)/sizeof(char*);
 
-    REQ req;
+    REQ req = REQ_DEFAULT;
     CURL *curl = requests_init(&req);
     char *body = requests_url_encode(curl, data, data_size);
     requests_put(curl, &req, posttestserver, body);
@@ -106,7 +106,7 @@ TEST put()
     ASSERT_EQ(code, req.code);
 
     curl_free(body);
-    requests_close(curl, &req);
+    requests_close(&req);
     PASS();
 }
 

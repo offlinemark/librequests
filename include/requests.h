@@ -40,8 +40,10 @@ typedef struct {
     size_t size;
 } REQ;
 
+extern const REQ REQ_DEFAULT;
+
 CURL *requests_init(REQ *req);
-void requests_close(CURL *curl, REQ *req);
+void requests_close(REQ *req);
 void requests_get(CURL *curl, REQ *req, char *url);
 void requests_pt(CURL *curl, REQ *req, char *url, char *data, char **headers,
                  int headers_size, int put_flag);

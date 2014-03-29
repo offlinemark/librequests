@@ -16,6 +16,6 @@ int main(int argc, const char *argv[])
     printf("Response Size: %zu\n", req.size);
     printf("Response Body:\n%s", req.text);
 
-    requests_close(curl, &req); // clean up
+    requests_close(&req); // clean up
     return 0;
 }
