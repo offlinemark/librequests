@@ -42,7 +42,7 @@ CURL *requests_init(REQ *req)
     req->url = NULL;
     req->text = calloc(1, 1);
     req->size = 0;
-    req->headers = NULL;
+    req->headers = calloc(1, 1);
     req->headers_size = 0;
 
     assert(req->text != NULL && "ERROR: Memory allocation failed");
@@ -57,8 +57,7 @@ void requests_close(REQ *req)
 {
     free(req->text);
     int i = 0;
-    /* the last array element is NULL, not dynamically allocated */
-    for (i = 0; i < (req->headers_size - 1); i++) {
+    for (i = 0; i < req->headers_size; i++) {
         free(req->headers[i]);
     }
     free(req->headers);
@@ -88,31 +87,26 @@ size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata)
 }
 
 /*
- * Callback function for assembling response headers.
+ * Callback function for headers, called once for each header. Allocates
+ * memory and assembles headers into string array.
  */
 size_t header_callback(char *content, size_t size, size_t nmemb,
                        REQ *userdata)
 {
     size_t real_size = size * nmemb;
+    size_t current_size = userdata->headers_size * sizeof(char*);
 
-    if (userdata->headers_size == 0) {
-        /* allocate one array block for header, one for NULL */
-        userdata->headers = calloc(2, sizeof(char*));
-        assert(userdata->headers != NULL &&
-               "ERROR: Memory allocation failed.");
-        userdata->headers_size += 2;
-    } else {
-        userdata->headers = realloc(userdata->headers,
-                                    userdata->headers_size * sizeof(char*)
-                                    + sizeof(char*));
-        assert(userdata->headers != NULL &&
-               "ERROR: Memory allocation failed.");
-        userdata->headers_size++;
-    }
+    /* the last header is always "\r\n" which we'll intentionally skip */
+    if (strcmp(content, "\r\n") == 0)
+        return real_size;
 
-    userdata->headers[userdata->headers_size - 1] = NULL;
-    userdata->headers[userdata->headers_size - 2] = strndup(content,
-                                                            size * nmemb + 1);
+    userdata->headers = realloc(userdata->headers,
+                                current_size + sizeof(char*));
+    assert(userdata->headers != NULL &&
+           "ERROR: Memory allocation failed.");
+    userdata->headers_size++;
+    userdata->headers[userdata->headers_size - 1] = strndup(content,
+                                                         size * nmemb + 1);
 
     return real_size;
 }
