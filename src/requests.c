@@ -26,14 +26,14 @@
 
 #include "../include/requests.h"
 
-const REQ REQ_DEFAULT = {0, NULL, NULL, 0};
+const REQ REQ_DEFAULT = {0, NULL, NULL, 0, NULL, 0};
 
 /*
  * Initializes requests struct data members
  */
 CURL *requests_init(REQ *req)
 {
-    // if this is not their first request
+    /* if this is not their first request */
     if (req->url != NULL) {
         free(req->text);
     }
@@ -42,6 +42,8 @@ CURL *requests_init(REQ *req)
     req->url = NULL;
     req->text = calloc(1, 1);
     req->size = 0;
+    req->headers = NULL;
+    req->headers_size = 0;
 
     assert(req->text != NULL && "ERROR: Memory allocation failed");
 
@@ -54,6 +56,7 @@ CURL *requests_init(REQ *req)
 void requests_close(REQ *req)
 {
     free(req->text);
+    free(req->headers);
 }
 
 /*
@@ -64,17 +67,49 @@ size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata)
 {
     size_t real_size = size * nmemb;
 
-    userdata->text = realloc(userdata->text, userdata->size + real_size + 1); // null byte!
+    /* extra 1 is for null byte */
+    userdata->text = realloc(userdata->text, userdata->size + real_size + 1);
     assert(userdata->text != NULL && "ERROR: Memory allocation failed");
 
     userdata->size += real_size;
 
-    char *responsetext = strndup(content, size * nmemb);
+    /* TODO - is strndup necessary? strncpy? */
+    char *responsetext = strndup(content, size * nmemb + 1);
     assert(responsetext != NULL && "ERROR: Memory allocation failed");
 
     strcat(userdata->text, responsetext);
 
     free(responsetext);
+    return real_size;
+}
+
+/*
+ * Callback function for assembling response headers.
+ */
+size_t header_callback(char *content, size_t size, size_t nmemb,
+                       REQ *userdata)
+{
+    size_t real_size = size * nmemb;
+
+    if (userdata->headers_size == 0) {
+        /* allocate one array block for header, one for NULL */
+        userdata->headers = calloc(2, sizeof(char*));
+        assert(userdata->headers != NULL &&
+               "ERROR: Memory allocation failed.");
+        userdata->headers_size += 2;
+    } else {
+        userdata->headers = realloc(userdata->headers,
+                                    userdata->headers_size * sizeof(char*)
+                                    + sizeof(char*));
+        assert(userdata->headers != NULL &&
+               "ERROR: Memory allocation failed.");
+        userdata->headers_size++;
+    }
+
+    userdata->headers[userdata->headers_size - 1] = NULL;
+    userdata->headers[userdata->headers_size - 2] = strndup(content,
+                                                            size * nmemb + 1);
+
     return real_size;
 }
 
@@ -109,7 +144,7 @@ char *requests_url_encode(CURL *curl, char **data, int data_size)
 {
     assert(data_size % 2 == 0 && "ERROR: Data size must be even");
 
-    // loop through and get total sum of lengths
+    /* loop through and get total sum of lengths */
     size_t total_size = 0;
     int i = 0;
     for (i = 0; i < data_size; i++) {
@@ -118,14 +153,14 @@ char *requests_url_encode(CURL *curl, char **data, int data_size)
         total_size += tmp_len;
     }
 
-    char encoded[total_size]; // clear junk bytes
+    char encoded[total_size]; /* clear junk bytes */
     snprintf(encoded, total_size, "%s", "");
 
-    // loop in groups of two, assembling key/val pairs
+    /* loop in groups of two, assembling key/val pairs */
     for (i = 0; i < data_size; i+=2) {
         char *key = data[i];
         char *val = data[i+1];
-        int offset = i == 0 ? 2 : 3; // =, \0 and maybe &
+        int offset = i == 0 ? 2 : 3; /* =, \0 and maybe & */
         size_t term_size = strlen(key) + strlen(val) + offset;
         char term[term_size];
         if (i == 0)
@@ -188,18 +223,18 @@ void requests_pt(CURL *curl, REQ *req, char *url, char *data, char **headers,
     assert((put_flag == 0 || put_flag == 1) &&
            "ERROR: Invalid PUT request flag");
 
-    // body data
+    /* body data */
     if (data != NULL) {
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
     } else {
-        // content length header defaults to -1, which causes request to fail
-        // sometimes, so we need to manually set it to 0
+        /* content length header defaults to -1, which causes request to fail
+           sometimes, so we need to manually set it to 0 */
         slist = curl_slist_append(slist, "Content-Length: 0");
         if (headers == NULL)
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
     }
 
-    // headers
+    /* headers */
     if (headers != NULL) {
         int i = 0;
         for (i = 0; i < headers_size; i++) {
@@ -210,8 +245,8 @@ void requests_pt(CURL *curl, REQ *req, char *url, char *data, char **headers,
 
     common_opt(curl, req);
     if (put_flag)
-        // use custom request instead of dedicated PUT, because dedicated
-        // PUT doesn't work with arbitrary request body data
+        /* use custom request instead of dedicated PUT, because dedicated
+           PUT doesn't work with arbitrary request body data */
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
     else
         curl_easy_setopt(curl, CURLOPT_POST, 1);
@@ -237,6 +272,8 @@ void common_opt(CURL *curl, REQ *req)
     curl_easy_setopt(curl, CURLOPT_URL, req->url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, req);
+    curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, header_callback);
+    curl_easy_setopt(curl, CURLOPT_HEADERDATA, req);
 }
 
 /*
@@ -244,7 +281,7 @@ void common_opt(CURL *curl, REQ *req)
  */
 char *user_agent()
 {
-    int ua_size = 3; // ' ', \, \0
+    int ua_size = 3; /* ' ', /, \0 */
     char *basic = "librequests/0.1";
     ua_size += strlen(basic);
     struct utsname name;

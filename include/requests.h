@@ -38,6 +38,8 @@ typedef struct {
     char *url;
     char *text;
     size_t size;
+    char **headers;
+    size_t headers_size;
 } REQ;
 
 extern const REQ REQ_DEFAULT;
