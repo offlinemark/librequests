@@ -13,7 +13,7 @@ int main(int argc, const char *argv[])
     };
     int data_size = sizeof(data)/sizeof(char*); // recommended way to get size
                                                 // of array
-    REQ req; // declare struct used to store data
+    REQ req = REQ_DEFAULT; // declare struct used to store data
     CURL *curl = requests_init(&req); // setup
 
     // returns apple%3Dred%26banana%3Dyellow

@@ -6,9 +6,12 @@ librequests is a wrapper library over [libcurl](http://curl.haxx.se/libcurl/)
 which attempts to simplify submitting simple HTTP requests. It is influenced,
 to a certain degree, by [python-requests](http://python-requests.org).
 
-*Disclaimer: I'm learning C through this project, so it's entirely possible
-that this code uses bad practices, is incorrect, etc. If you find something,
-do [let me know](http://github.com/markmossberg/librequests/issues?page=1&state=open).*
+## dependencies
+
+Make sure you have libcurl installed. On OS X, use [homebrew](http://brew.sh)
+and run `brew install curl`.
+On [Ubuntu](http://askubuntu.com/questions/78183/installing-curl-h-library)
+`sudo apt-get install libcurl4-openssl-dev` will work.
 
 ## building
 
@@ -29,13 +32,18 @@ static C library that you can compile your own code against.
 
 int main(int argc, const char *argv[])
 {
-    REQ req; // declare struct used to store data
+    REQ req = REQ_DEFAULT; // declare struct used to store data
     CURL *curl = requests_init(&req); // setup
 
     requests_get(curl, &req, "http://example.com"); // submit GET request
     printf("Request URL: %s\n", req.url);
     printf("Response Code: %lu\n", req.code);
     printf("Response Size: %zu\n", req.size);
+    printf("Response Headers:\n");
+    int i = 0;
+    for (i = 0; i < req.headers_size; i++) {
+        printf("\t %s", req.headers[i]);
+    }
     printf("Response Body:\n%s", req.text);
 
     requests_close(curl, &req); // clean up
@@ -58,6 +66,12 @@ $ ./get
 Request URL: http://example.com
 Response Code: 200
 Response Size: 1270
+Response Headers:
+     HTTP/1.1 200 OK
+     Accept-Ranges: bytes
+     Cache-Control: max-age=604800
+     Content-Type: text/html
+     ...
 Response Body:
 <!doctype html>
 <html>
@@ -67,6 +81,68 @@ Response Body:
 ```
 
 For more examples, look in the "examples" directory.
+
+## documentation
+
+Looking at the examples is probably the easiest way to learn to
+use this. That said, there's a few core things that are good to know.
+
+First off, all the good stuff happens with the `REQ` datatype which is just
+a special struct that holds all the stuff from the request. Source below.
+
+```
+typedef struct {
+    long code;           // Response Code
+    char *url;           // Request URL
+    char *text;          // Response Body
+    size_t size;         // Length of Body
+    char **headers;      // Character Array of Headers
+    size_t headers_size; // Length of above array
+} REQ;
+```
+
+At the beginning of every program that uses this library should be two lines.
+
+```
+REQ req = REQ_DEFAULT;
+CURL *curl = requests_init(&req);
+```
+
+The first line intializes the `REQ` struct. The second line gets everything
+set up and returns the curl handle that libcurl needs, which needs to be
+passed into future functions.
+
+At this point you're all set to actually make requests using the core
+functions:
+
+```
+void requests_get(CURL *curl, REQ *req, char *url);
+void requests_post(CURL *curl, REQ *req, char *url, char *data);
+void requests_put(CURL *curl, REQ *req, char *url, char *data);
+```
+
+The data parameter of POST and PUT needs to already be url-encoded, but
+the `requests_url_encode()` function can help you with that.
+
+```
+char *data[] = {
+    "apple",  "red", // array of key-value pairs
+    "banana", "yellow"
+};
+int data_size = sizeof(data)/sizeof(char*); // recommended way to get size
+                                            // of array
+...
+char *body = requests_url_encode(curl, data, data_size);
+requests_post(curl, &req, "http://www.posttestserver.com/post.php", body);
+```
+
+Lastly, make sure to call the cleanup functions once you're done. If you used
+the url encode function, you'll need to separately `curl_free()` the returned
+string, but otherwise, a simple call to `requests_close()` will do.
+
+```
+requests_close(&req);
+```
 
 ## contribution
 
