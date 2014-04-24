@@ -38,12 +38,6 @@ int main(int argc, const char *argv[])
     requests_get(curl, &req, "http://example.com"); // submit GET request
     printf("Request URL: %s\n", req.url);
     printf("Response Code: %lu\n", req.code);
-    printf("Response Size: %zu\n", req.size);
-    printf("Response Headers:\n");
-    int i = 0;
-    for (i = 0; i < req.headers_size; i++) {
-        printf("\t %s", req.headers[i]);
-    }
     printf("Response Body:\n%s", req.text);
 
     requests_close(curl, &req); // clean up
@@ -65,13 +59,6 @@ And you should see:
 $ ./get
 Request URL: http://example.com
 Response Code: 200
-Response Size: 1270
-Response Headers:
-     HTTP/1.1 200 OK
-     Accept-Ranges: bytes
-     Cache-Control: max-age=604800
-     Content-Type: text/html
-     ...
 Response Body:
 <!doctype html>
 <html>
@@ -98,6 +85,7 @@ typedef struct {
     size_t size;         // Length of Body
     char **headers;      // Character Array of Headers
     size_t headers_size; // Length of above array
+    int ok;              // Bool value. Response codes < 400 are "ok"
 } REQ;
 ```
 
