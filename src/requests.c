@@ -56,6 +56,11 @@ CURL *requests_init(REQ *req)
 void requests_close(REQ *req)
 {
     free(req->text);
+    int i = 0;
+    /* the last array element is NULL, not dynamically allocated */
+    for (i = 0; i < (req->headers_size - 1); i++) {
+        free(req->headers[i]);
+    }
     free(req->headers);
 }
 
