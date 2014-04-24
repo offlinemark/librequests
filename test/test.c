@@ -30,6 +30,7 @@ TEST get()
 
     ASSERT_EQ(code, req.code);
     ASSERT_EQ(size, req.size);
+    ASSERT_EQ(1, req.ok);
 
     requests_close(&req);
     PASS();

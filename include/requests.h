@@ -40,6 +40,7 @@ typedef struct {
     size_t size;
     char **headers;
     size_t headers_size;
+    int ok;
 } REQ;
 
 extern const REQ REQ_DEFAULT;
@@ -61,5 +62,6 @@ size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata);
 size_t header_callback(char *content, size_t size, size_t nmemb,
                                REQ *userdata);
 char *user_agent();
+void check_ok(REQ *req);
 
 #endif

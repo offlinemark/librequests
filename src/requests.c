@@ -26,7 +26,7 @@
 
 #include "../include/requests.h"
 
-const REQ REQ_DEFAULT = {0, NULL, NULL, 0, NULL, 0};
+const REQ REQ_DEFAULT = {0, NULL, NULL, 0, NULL, 0, 0};
 
 /*
  * Initializes requests struct data members
@@ -44,6 +44,7 @@ CURL *requests_init(REQ *req)
     req->size = 0;
     req->headers = calloc(1, 1);
     req->headers_size = 0;
+    req->ok = 0;
 
     assert(req->text != NULL && "ERROR: Memory allocation failed");
 
@@ -129,6 +130,7 @@ void requests_get(CURL *curl, REQ *req, char *url)
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
 
     req->code = code;
+    check_ok(req);
     curl_easy_cleanup(curl);
 }
 
@@ -253,6 +255,7 @@ void requests_pt(CURL *curl, REQ *req, char *url, char *data, char **headers,
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
 
     req->code = code;
+    check_ok(req);
 
     if (encoded != NULL)
         curl_free(encoded);
@@ -294,4 +297,16 @@ char *user_agent()
     snprintf(ua, ua_size, "%s %s/%s", basic, kernel, version);
 
     return ua;
+}
+
+/*
+ * Utility function for setting "ok" struct field. Response codes of 400+
+ * are considered "not ok".
+ */
+void check_ok(REQ *req)
+{
+    if (req->code >= 400 || req->code == 0)
+        req->ok = 0;
+    else
+        req->ok = 1;
 }
