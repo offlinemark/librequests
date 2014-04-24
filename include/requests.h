@@ -58,6 +58,8 @@ void requests_put_headers(CURL *curl, REQ *req, char *url, char *data,
 void common_opt(CURL *curl, REQ *req);
 char *requests_url_encode(CURL *curl, char **data, int data_size);
 size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata);
+size_t header_callback(char *content, size_t size, size_t nmemb,
+                               REQ *userdata);
 char *user_agent();
 
 #endif
