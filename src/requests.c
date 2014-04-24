@@ -78,7 +78,6 @@ size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata)
 
     userdata->size += real_size;
 
-    /* TODO - is strndup necessary? strncpy? */
     char *responsetext = strndup(content, size * nmemb + 1);
     assert(responsetext != NULL && "ERROR: Memory allocation failed");
 
