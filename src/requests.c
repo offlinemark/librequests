@@ -118,6 +118,7 @@ size_t header_callback(char *content, size_t size, size_t nmemb,
  */
 void requests_get(CURL *curl, REQ *req, char *url)
 {
+    char *ua = user_agent();
     req->url = url;
     assert(req->url != NULL && "ERROR: No URL provided");
 
@@ -126,12 +127,14 @@ void requests_get(CURL *curl, REQ *req, char *url)
     common_opt(curl, req);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, req);
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, ua);
     curl_easy_perform(curl);
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
 
     req->code = code;
     check_ok(req);
     curl_easy_cleanup(curl);
+    free(ua);
 }
 
 /*
