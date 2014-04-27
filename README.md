@@ -40,7 +40,7 @@ int main(int argc, const char *argv[])
     printf("Response Code: %lu\n", req.code);
     printf("Response Body:\n%s", req.text);
 
-    requests_close(curl, &req); // clean up
+    requests_close(&req); // clean up
     return 0;
 }
 ```
