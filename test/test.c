@@ -8,7 +8,8 @@
 # define DEBUG(M, ...)
 #endif
 
-char *example = "http://example.com";
+char *example = "https://gist.githubusercontent.com/mossberg/91093537c33e69e4da2c/raw/librequests_test.txt";
+char *example_text = "Simple test file for librequests.\r";
 char *posttestserver = "http://posttestserver.com/post.php";
 
 void test_print(REQ *req)
@@ -22,7 +23,7 @@ void test_print(REQ *req)
 TEST get()
 {
     long code = 200;
-    size_t size = 1270;
+    size_t size = 33;
 
     REQ req = REQ_DEFAULT;
     CURL *curl = requests_init(&req);
@@ -30,6 +31,8 @@ TEST get()
 
     ASSERT_EQ(code, req.code);
     ASSERT_EQ(size, req.size);
+    ASSERT(strcmp(example_text, req.text) == 0);
+    ASSERT(strcmp(req.headers[0], "HTTP/1.1 200 OK\r\n") == 0);
     ASSERT_EQ(1, req.ok);
 
     requests_close(&req);
@@ -51,6 +54,9 @@ TEST post()
     requests_post(curl, &req, posttestserver, body);
 
     ASSERT_EQ(code, req.code);
+    ASSERT(strcmp(req.headers[0], "HTTP/1.1 200 OK\r\n") == 0);
+    ASSERT(strstr(req.text, "Successfully") != NULL);
+    ASSERT_EQ(1, req.ok);
 
     curl_free(body);
     requests_close(&req);
@@ -66,6 +72,9 @@ TEST post_nodata()
     requests_post(curl, &req, posttestserver, NULL);
 
     ASSERT_EQ(code, req.code);
+    ASSERT(strcmp(req.headers[0], "HTTP/1.1 200 OK\r\n") == 0);
+    ASSERT(strstr(req.text, "Successfully") != NULL);
+    ASSERT_EQ(1, req.ok);
 
     requests_close(&req);
     PASS();
@@ -85,6 +94,9 @@ TEST post_headers()
     requests_post_headers(curl, &req, posttestserver, NULL, headers, headers_size);
 
     ASSERT_EQ(code, req.code);
+    ASSERT(strcmp(req.headers[0], "HTTP/1.1 200 OK\r\n") == 0);
+    ASSERT(strstr(req.text, "Successfully") != NULL);
+    ASSERT_EQ(1, req.ok);
 
     requests_close(&req);
     PASS();
@@ -105,6 +117,9 @@ TEST put()
     requests_put(curl, &req, posttestserver, body);
 
     ASSERT_EQ(code, req.code);
+    ASSERT(strcmp(req.headers[0], "HTTP/1.1 200 OK\r\n") == 0);
+    ASSERT(strstr(req.text, "Successfully") != NULL);
+    ASSERT_EQ(1, req.ok);
 
     curl_free(body);
     requests_close(&req);
