@@ -36,6 +36,7 @@ CURL *requests_init(REQ *req)
     /* if this is not their first request */
     if (req->url != NULL) {
         free(req->text);
+        free(req->headers);
     }
 
     req->code = 0;
