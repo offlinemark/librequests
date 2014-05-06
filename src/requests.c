@@ -47,7 +47,10 @@ CURL *requests_init(REQ *req)
     req->headers_size = 0;
     req->ok = 0;
 
-    assert(req->text != NULL && "ERROR: Memory allocation failed");
+    if (req->text == NULL || req->headers == NULL) {
+        printf("[!] librequests error: Memory allocation failed");
+        exit(1);
+    }
 
     return curl_easy_init();
 }
@@ -75,12 +78,18 @@ size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata)
 
     /* extra 1 is for null byte */
     userdata->text = realloc(userdata->text, userdata->size + real_size + 1);
-    assert(userdata->text != NULL && "ERROR: Memory allocation failed");
+    if (userdata->text == NULL) {
+        printf("[!] librequests error: Memory allocation failed");
+        exit(1);
+    }
 
     userdata->size += real_size;
 
     char *responsetext = strndup(content, size * nmemb + 1);
-    assert(responsetext != NULL && "ERROR: Memory allocation failed");
+    if (responsetext == NULL) {
+        printf("[!] librequests error: Memory allocation failed");
+        exit(1);
+    }
 
     strcat(userdata->text, responsetext);
 
@@ -104,12 +113,14 @@ size_t header_callback(char *content, size_t size, size_t nmemb,
 
     userdata->headers = realloc(userdata->headers,
                                 current_size + sizeof(char*));
-    assert(userdata->headers != NULL &&
-           "ERROR: Memory allocation failed.");
+    if (userdata->headers == NULL) {
+        printf("[!] librequests error: Memory allocation failed.");
+        exit(1);
+    }
+
     userdata->headers_size++;
     userdata->headers[userdata->headers_size - 1] = strndup(content,
                                                          size * nmemb + 1);
-
     return real_size;
 }
 
@@ -121,7 +132,10 @@ void requests_get(CURL *curl, REQ *req, char *url)
 {
     char *ua = user_agent();
     req->url = url;
-    assert(req->url != NULL && "ERROR: No URL provided");
+    if (req->url == NULL) {
+        printf("[!] librequests error: No URL provided");
+        exit(1);
+    }
 
     long code = 0;
 
@@ -146,7 +160,10 @@ void requests_get(CURL *curl, REQ *req, char *url)
  */
 char *requests_url_encode(CURL *curl, char **data, int data_size)
 {
-    assert(data_size % 2 == 0 && "ERROR: Data size must be even");
+    if (data_size % 2 != 0) {
+        printf("[!] librequests error: Data size must be even");
+        exit(1);
+    }
 
     /* loop through and get total sum of lengths */
     size_t total_size = 0;
@@ -223,9 +240,13 @@ void requests_pt(CURL *curl, REQ *req, char *url, char *data, char **headers,
     long code = 0;
     req->url = url;
 
-    assert(req->url != NULL && "ERROR: No URL provided.");
-    assert((put_flag == 0 || put_flag == 1) &&
-           "ERROR: Invalid PUT request flag");
+    if (req->url == NULL) {
+        printf("[!] librequests error: No URL provided.");
+        exit(1);
+    } else if (put_flag != 0 && put_flag != 1) {
+        printf("[!] librequests error: Invalid PUT request flag");
+        exit(1);
+    }
 
     /* body data */
     if (data != NULL) {
@@ -297,7 +318,10 @@ char *user_agent()
     ua_size += strlen(version);
 
     char *ua = malloc(ua_size);
-    assert(ua != NULL && "ERROR: Memory allocation failed");
+    if (ua == NULL) {
+        printf("[!] librequests error: Memory allocation failed");
+        exit(1);
+    }
     snprintf(ua, ua_size, "%s %s/%s", basic, kernel, version);
 
     return ua;
