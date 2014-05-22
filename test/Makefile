@@ -1,7 +1,7 @@
 ifdef DEBUG
-	FLAGS = -Wall -g -D _DEBUG_
+	FLAGS = -Wall -g -D _DEBUG_ -I ../include
 else
-	FLAGS = -Wall -g
+	FLAGS = -Wall -g -I ../include
 endif
 
 BIN = test

@@ -24,7 +24,7 @@
  * THE SOFTWARE.
  */
 
-#include "../include/requests.h"
+#include "requests.h"
 
 const REQ REQ_DEFAULT = {0, NULL, NULL, 0, NULL, 0, 0};
 

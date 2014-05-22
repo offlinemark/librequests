@@ -1,4 +1,4 @@
-FLAGS = -Wall -g
+FLAGS = -Wall -g -I ../include
 BIN = test
 SRC = $(wildcard *.c)
 NAME = requests
