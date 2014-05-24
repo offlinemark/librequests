@@ -125,45 +125,62 @@ size_t header_callback(char *content, size_t size, size_t nmemb,
 }
 
 /*
- * Performs GET request and populates req struct text member with request
- * response, code with response code, and size with size of response.
+ * requests_get - Performs GET request and populates req struct text member
+ * with request response, code with response code, and size with size of
+ * response.
+ *
+ * Returns the CURLcode return code provided from curl_easy_perform. CURLE_OK
+ * is returned on success.
+ *
+ * @curl: libcurl handle
+ * @req:  request struct
+ * @url:  url to send request to
  */
-void requests_get(CURL *curl, REQ *req, char *url)
+CURLcode requests_get(CURL *curl, REQ *req, char *url)
 {
+    CURLcode rc;
     char *ua = user_agent();
     req->url = url;
-    if (req->url == NULL) {
-        printf("[!] librequests error: No URL provided");
-        exit(1);
-    }
-
     long code = 0;
 
     common_opt(curl, req);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, req);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, ua);
-    curl_easy_perform(curl);
+    rc = curl_easy_perform(curl);
+    if (rc != CURLE_OK)
+        return rc;
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
 
     req->code = code;
     check_ok(req);
     curl_easy_cleanup(curl);
     free(ua);
+
+    return rc;
 }
 
 /*
- * Url encoding function. Takes as input an array of char strings and the
- * size of the array. The array should consist of keys and the corresponding
- * value immediately after in the array. There must be an even number of
- * array elements (one value for every key).
+ * requests_url_encode - Url encoding function. Takes as input an array of
+ * char strings and the size of the array. The array should consist of keys
+ * and the corresponding value immediately after in the array. There must be
+ * an even number of array elements (one value for every key).
+ *
+ * Returns pointer to url encoded string if successful, or NULL if
+ * unsuccessful.
+ *
+ * @curl:      libcurl handle
+ * @data:      char* array as described above
+ * @data-size: length of array
  */
 char *requests_url_encode(CURL *curl, char **data, int data_size)
 {
-    if (data_size % 2 != 0) {
-        printf("[!] librequests error: Data size must be even");
-        exit(1);
-    }
+    char *key, *val;
+    int offset;
+    size_t term_size;
+
+    if (data_size % 2 != 0)
+        return NULL;
 
     /* loop through and get total sum of lengths */
     size_t total_size = 0;
@@ -179,10 +196,10 @@ char *requests_url_encode(CURL *curl, char **data, int data_size)
 
     /* loop in groups of two, assembling key/val pairs */
     for (i = 0; i < data_size; i+=2) {
-        char *key = data[i];
-        char *val = data[i+1];
-        int offset = i == 0 ? 2 : 3; /* =, \0 and maybe & */
-        size_t term_size = strlen(key) + strlen(val) + offset;
+        key = data[i];
+        val = data[i+1];
+        offset = i == 0 ? 2 : 3; /* =, \0 and maybe & */
+        term_size = strlen(key) + strlen(val) + offset;
         char term[term_size];
         if (i == 0)
             snprintf(term, term_size, "%s=%s", key, val);
@@ -196,57 +213,54 @@ char *requests_url_encode(CURL *curl, char **data, int data_size)
     return full_encoded;
 }
 
-void requests_post(CURL *curl, REQ *req, char *url, char *data)
+CURLcode requests_post(CURL *curl, REQ *req, char *url, char *data)
 {
-    requests_pt(curl, req, url, data, NULL, 0, 0);
+    return requests_pt(curl, req, url, data, NULL, 0, 0);
 }
 
-void requests_put(CURL *curl, REQ *req, char *url, char *data)
+CURLcode requests_put(CURL *curl, REQ *req, char *url, char *data)
 {
-    requests_pt(curl, req, url, data, NULL, 0, 1);
+    return requests_pt(curl, req, url, data, NULL, 0, 1);
 }
 
-void requests_post_headers(CURL *curl, REQ *req, char *url, char *data,
-                           char **headers, int headers_size)
+CURLcode requests_post_headers(CURL *curl, REQ *req, char *url, char *data,
+                               char **headers, int headers_size)
 {
-    requests_pt(curl, req, url, data, headers, headers_size, 0);
+    return requests_pt(curl, req, url, data, headers, headers_size, 0);
 }
 
-void requests_put_headers(CURL *curl, REQ *req, char *url, char *data,
-                          char **headers, int headers_size)
+CURLcode requests_put_headers(CURL *curl, REQ *req, char *url, char *data,
+                              char **headers, int headers_size)
 {
-    requests_pt(curl, req, url, data, headers, headers_size, 1);
+    return requests_pt(curl, req, url, data, headers, headers_size, 1);
 }
 
 /*
- * Utility function that performs POST or PUT request using supplied data and
- * populates req struct text member with request response, code with response
- * code, and size with size of response. To submit no data, use NULL for data,
- * and 0 for data_size.
- *
- * Since PUT and POST are only semantically different, when put_flag is 1,
- * a PUT request will be submitted instead of post. When it's 0, will use a
- * normal POST.
+ * requests_pt - Utility function that performs POST or PUT request using
+ * supplied data and populates req struct text member with request response,
+ * code with response code, and size with size of response. To submit no
+ * data, use NULL for data, and 0 for data_size.
  *
  * Typically this function isn't used directly, use requests_post() or
  * requests_put() instead.
+ *
+ * @curl: libcurl handle
+ * @req: request struct
+ * @url: url to send request to
+ * @data: url encoded data to send in request body
+ * @headers: char* array of custom headers
+ * @headers_size: length of `headers`
+ * @put_flag: if not zero, sends PUT request, otherwise uses POST
  */
-void requests_pt(CURL *curl, REQ *req, char *url, char *data, char **headers,
-                 int headers_size, int put_flag)
+CURLcode requests_pt(CURL *curl, REQ *req, char *url, char *data,
+                     char **headers, int headers_size, int put_flag)
 {
+    CURLcode rc;
     char *ua = user_agent();
     char *encoded = NULL;
     struct curl_slist *slist = NULL;
     long code = 0;
     req->url = url;
-
-    if (req->url == NULL) {
-        printf("[!] librequests error: No URL provided.");
-        exit(1);
-    } else if (put_flag != 0 && put_flag != 1) {
-        printf("[!] librequests error: Invalid PUT request flag");
-        exit(1);
-    }
 
     /* body data */
     if (data != NULL) {
@@ -276,7 +290,9 @@ void requests_pt(CURL *curl, REQ *req, char *url, char *data, char **headers,
     else
         curl_easy_setopt(curl, CURLOPT_POST, 1);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, ua);
-    curl_easy_perform(curl);
+    rc = curl_easy_perform(curl);
+    if (rc != CURLE_OK)
+        return rc;
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
 
     req->code = code;
@@ -288,6 +304,8 @@ void requests_pt(CURL *curl, REQ *req, char *url, char *data, char **headers,
         curl_slist_free_all(slist);
     free(ua);
     curl_easy_cleanup(curl);
+
+    return rc;
 }
 
 /*
@@ -306,7 +324,7 @@ void common_opt(CURL *curl, REQ *req)
  * Utility function for creating custom user agent.
  */
 char *user_agent()
-{
+    {
     int ua_size = 3; /* ' ', /, \0 */
     char *basic = "librequests/0.1";
     ua_size += strlen(basic);
