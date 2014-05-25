@@ -32,15 +32,15 @@ static C library that you can compile your own code against.
 
 int main(int argc, const char *argv[])
 {
-    REQ req = REQ_DEFAULT; // declare struct used to store data
-    CURL *curl = requests_init(&req); // setup
+    req_t req = REQ_DEFAULT;          /* declare struct used to store data */
+    CURL *curl = requests_init(&req); /* setup */
 
-    requests_get(curl, &req, "http://example.com"); // submit GET request
+    requests_get(curl, &req, "http://example.com"); /* submit GET request */
     printf("Request URL: %s\n", req.url);
     printf("Response Code: %lu\n", req.code);
     printf("Response Body:\n%s", req.text);
 
-    requests_close(&req); // clean up
+    requests_close(&req); /* clean up */
     return 0;
 }
 ```
@@ -74,7 +74,7 @@ For more examples, look in the "examples" directory.
 Looking at the examples is probably the easiest way to learn to
 use this. That said, there's a few core things that are good to know.
 
-First off, all the good stuff happens with the `REQ` datatype which is just
+First off, all the good stuff happens with the `req_t` datatype which is just
 a special struct that holds all the stuff from the request. Source below.
 
 ```
@@ -86,17 +86,17 @@ typedef struct {
     char **headers;      // Character Array of Headers
     size_t headers_size; // Length of above array
     int ok;              // Bool value. Response codes < 400 are "ok"
-} REQ;
+} req_t;
 ```
 
 At the beginning of every program that uses this library should be two lines.
 
 ```
-REQ req = REQ_DEFAULT;
+req_t req = REQ_DEFAULT;
 CURL *curl = requests_init(&req);
 ```
 
-The first line intializes the `REQ` struct. The second line gets everything
+The first line intializes the `req_t` struct. The second line gets everything
 set up and returns the curl handle that libcurl needs, which needs to be
 passed into future functions.
 
@@ -104,9 +104,9 @@ At this point you're all set to actually make requests using the core
 functions:
 
 ```
-void requests_get(CURL *curl, REQ *req, char *url);
-void requests_post(CURL *curl, REQ *req, char *url, char *data);
-void requests_put(CURL *curl, REQ *req, char *url, char *data);
+void requests_get(CURL *curl, req_t *req, char *url);
+void requests_post(CURL *curl, req_t *req, char *url, char *data);
+void requests_put(CURL *curl, req_t *req, char *url, char *data);
 ```
 
 The data parameter of POST and PUT needs to already be url-encoded, but

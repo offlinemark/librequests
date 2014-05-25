@@ -41,27 +41,27 @@ typedef struct {
     char **headers;
     size_t headers_size;
     int ok;
-} REQ;
+} req_t;
 
-extern const REQ REQ_DEFAULT;
+extern const req_t REQ_DEFAULT;
 
-CURL *requests_init(REQ *req);
-void requests_close(REQ *req);
-CURLcode requests_get(CURL *curl, REQ *req, char *url);
-CURLcode requests_pt(CURL *curl, REQ *req, char *url, char *data, char **headers,
+CURL *requests_init(req_t *req);
+void requests_close(req_t *req);
+CURLcode requests_get(CURL *curl, req_t *req, char *url);
+CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data, char **headers,
                      int headers_size, int put_flag);
-CURLcode requests_post(CURL *curl, REQ *req, char *url, char *data);
-CURLcode requests_put(CURL *curl, REQ *req, char *url, char *data);
-CURLcode requests_post_headers(CURL *curl, REQ *req, char *url, char *data,
+CURLcode requests_post(CURL *curl, req_t *req, char *url, char *data);
+CURLcode requests_put(CURL *curl, req_t *req, char *url, char *data);
+CURLcode requests_post_headers(CURL *curl, req_t *req, char *url, char *data,
                                char **headers, int headers_size);
-CURLcode requests_put_headers(CURL *curl, REQ *req, char *url, char *data,
+CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
                               char **headers, int headers_size);
-void common_opt(CURL *curl, REQ *req);
+void common_opt(CURL *curl, req_t *req);
 char *requests_url_encode(CURL *curl, char **data, int data_size);
-size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata);
+size_t callback(char *content, size_t size, size_t nmemb, req_t *userdata);
 size_t header_callback(char *content, size_t size, size_t nmemb,
-                       REQ *userdata);
+                       req_t *userdata);
 char *user_agent();
-void check_ok(REQ *req);
+void check_ok(req_t *req);
 
 #endif

@@ -12,7 +12,7 @@ char *example = "https://gist.githubusercontent.com/mossberg/91093537c33e69e4da2
 char *example_text = "Simple test file for librequests.\r";
 char *posttestserver = "http://posttestserver.com/post.php";
 
-void test_print(REQ *req)
+void test_print(req_t *req)
 {
     printf("Request URL: %s\n", req->url);
     printf("Response Code: %lu\n", req->code);
@@ -25,7 +25,7 @@ TEST get()
     long code = 200;
     size_t size = 33;
 
-    REQ req = REQ_DEFAULT;
+    req_t req = REQ_DEFAULT;
     CURL *curl = requests_init(&req);
     requests_get(curl, &req, example);
 
@@ -48,7 +48,7 @@ TEST post()
     };
     int data_size = sizeof(data)/sizeof(char*);
 
-    REQ req = REQ_DEFAULT;
+    req_t req = REQ_DEFAULT;
     CURL *curl = requests_init(&req);
     char *body = requests_url_encode(curl, data, data_size);
     requests_post(curl, &req, posttestserver, body);
@@ -67,7 +67,7 @@ TEST post_nodata()
 {
     long code = 200;
 
-    REQ req = REQ_DEFAULT;
+    req_t req = REQ_DEFAULT;
     CURL *curl = requests_init(&req);
     requests_post(curl, &req, posttestserver, NULL);
 
@@ -89,7 +89,7 @@ TEST post_headers()
     };
     int headers_size = sizeof(headers)/sizeof(char*);
 
-    REQ req = REQ_DEFAULT;
+    req_t req = REQ_DEFAULT;
     CURL *curl = requests_init(&req);
     requests_post_headers(curl, &req, posttestserver, NULL, headers, headers_size);
 
@@ -111,7 +111,7 @@ TEST put()
     };
     int data_size = sizeof(data)/sizeof(char*);
 
-    REQ req = REQ_DEFAULT;
+    req_t req = REQ_DEFAULT;
     CURL *curl = requests_init(&req);
     char *body = requests_url_encode(curl, data, data_size);
     requests_put(curl, &req, posttestserver, body);

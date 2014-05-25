@@ -26,12 +26,12 @@
 
 #include "requests.h"
 
-const REQ REQ_DEFAULT = {0, NULL, NULL, 0, NULL, 0, 0};
+const req_t REQ_DEFAULT = {0, NULL, NULL, 0, NULL, 0, 0};
 
 /*
  * Initializes requests struct data members
  */
-CURL *requests_init(REQ *req)
+CURL *requests_init(req_t *req)
 {
     /* if this is not their first request */
     if (req->url != NULL) {
@@ -58,7 +58,7 @@ CURL *requests_init(REQ *req)
 /*
  * Calls curl clean up and free allocated memory
  */
-void requests_close(REQ *req)
+void requests_close(req_t *req)
 {
     free(req->text);
     int i = 0;
@@ -72,7 +72,7 @@ void requests_close(REQ *req)
  * Callback function for requests, may be called multiple times per request.
  * Allocates memory and assembles response data.
  */
-size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata)
+size_t callback(char *content, size_t size, size_t nmemb, req_t *userdata)
 {
     size_t real_size = size * nmemb;
 
@@ -102,7 +102,7 @@ size_t callback(char *content, size_t size, size_t nmemb, REQ *userdata)
  * memory and assembles headers into string array.
  */
 size_t header_callback(char *content, size_t size, size_t nmemb,
-                       REQ *userdata)
+                       req_t *userdata)
 {
     size_t real_size = size * nmemb;
     size_t current_size = userdata->headers_size * sizeof(char*);
@@ -136,7 +136,7 @@ size_t header_callback(char *content, size_t size, size_t nmemb,
  * @req:  request struct
  * @url:  url to send request to
  */
-CURLcode requests_get(CURL *curl, REQ *req, char *url)
+CURLcode requests_get(CURL *curl, req_t *req, char *url)
 {
     CURLcode rc;
     char *ua = user_agent();
@@ -213,23 +213,23 @@ char *requests_url_encode(CURL *curl, char **data, int data_size)
     return full_encoded;
 }
 
-CURLcode requests_post(CURL *curl, REQ *req, char *url, char *data)
+CURLcode requests_post(CURL *curl, req_t *req, char *url, char *data)
 {
     return requests_pt(curl, req, url, data, NULL, 0, 0);
 }
 
-CURLcode requests_put(CURL *curl, REQ *req, char *url, char *data)
+CURLcode requests_put(CURL *curl, req_t *req, char *url, char *data)
 {
     return requests_pt(curl, req, url, data, NULL, 0, 1);
 }
 
-CURLcode requests_post_headers(CURL *curl, REQ *req, char *url, char *data,
+CURLcode requests_post_headers(CURL *curl, req_t *req, char *url, char *data,
                                char **headers, int headers_size)
 {
     return requests_pt(curl, req, url, data, headers, headers_size, 0);
 }
 
-CURLcode requests_put_headers(CURL *curl, REQ *req, char *url, char *data,
+CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
                               char **headers, int headers_size)
 {
     return requests_pt(curl, req, url, data, headers, headers_size, 1);
@@ -252,7 +252,7 @@ CURLcode requests_put_headers(CURL *curl, REQ *req, char *url, char *data,
  * @headers_size: length of `headers`
  * @put_flag: if not zero, sends PUT request, otherwise uses POST
  */
-CURLcode requests_pt(CURL *curl, REQ *req, char *url, char *data,
+CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
                      char **headers, int headers_size, int put_flag)
 {
     CURLcode rc;
@@ -311,7 +311,7 @@ CURLcode requests_pt(CURL *curl, REQ *req, char *url, char *data,
 /*
  * Utility function for executing common curl options.
  */
-void common_opt(CURL *curl, REQ *req)
+void common_opt(CURL *curl, req_t *req)
 {
     curl_easy_setopt(curl, CURLOPT_URL, req->url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
@@ -349,7 +349,7 @@ char *user_agent()
  * Utility function for setting "ok" struct field. Response codes of 400+
  * are considered "not ok".
  */
-void check_ok(REQ *req)
+void check_ok(req_t *req)
 {
     if (req->code >= 400 || req->code == 0)
         req->ok = 0;

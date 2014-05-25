@@ -8,8 +8,8 @@
 int main(int argc, const char *argv[])
 {
     // declare struct used to store data
-    REQ req = REQ_DEFAULT; // you have to initialize this to REQ_DEFAULT if
-                           // you're using multiple requests with one REQ
+    req_t req = REQ_DEFAULT; // you have to initialize this to REQ_DEFAULT if
+                           // you're using multiple requests with one req_t
                            // struct
     CURL *curl = requests_init(&req); // setup
 
