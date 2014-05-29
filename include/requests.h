@@ -61,7 +61,7 @@ char *requests_url_encode(CURL *curl, char **data, int data_size);
 size_t callback(char *content, size_t size, size_t nmemb, req_t *userdata);
 size_t header_callback(char *content, size_t size, size_t nmemb,
                        req_t *userdata);
-char *user_agent();
+char *user_agent(void);
 void check_ok(req_t *req);
 
 #endif

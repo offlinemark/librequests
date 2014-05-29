@@ -323,8 +323,8 @@ void common_opt(CURL *curl, req_t *req)
 /*
  * Utility function for creating custom user agent.
  */
-char *user_agent()
-    {
+char *user_agent(void)
+{
     int ua_size = 3; /* ' ', /, \0 */
     char *basic = "librequests/0.1";
     ua_size += strlen(basic);
