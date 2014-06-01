@@ -29,7 +29,11 @@
 const req_t REQ_DEFAULT = {0, NULL, NULL, 0, NULL, 0, 0};
 
 /*
- * Initializes requests struct data members
+ * requests_init - Initializes requests struct data members
+ *
+ * Returns libcurl handle on success, or NULL on failure.
+ *
+ * @req: reference to req_t to be initialized
  */
 CURL *requests_init(req_t *req)
 {
@@ -47,10 +51,8 @@ CURL *requests_init(req_t *req)
     req->headers_size = 0;
     req->ok = 0;
 
-    if (req->text == NULL || req->headers == NULL) {
-        printf("[!] librequests error: Memory allocation failed");
-        exit(1);
-    }
+    if (req->text == NULL || req->headers == NULL)
+        return NULL;
 
     return curl_easy_init();
 }
@@ -78,18 +80,14 @@ size_t callback(char *content, size_t size, size_t nmemb, req_t *userdata)
 
     /* extra 1 is for null byte */
     userdata->text = realloc(userdata->text, userdata->size + real_size + 1);
-    if (userdata->text == NULL) {
-        printf("[!] librequests error: Memory allocation failed");
-        exit(1);
-    }
+    if (userdata->text == NULL)
+        return -1;
 
     userdata->size += real_size;
 
     char *responsetext = strndup(content, size * nmemb + 1);
-    if (responsetext == NULL) {
-        printf("[!] librequests error: Memory allocation failed");
-        exit(1);
-    }
+    if (responsetext == NULL)
+        return -1;
 
     strcat(userdata->text, responsetext);
 
@@ -113,14 +111,12 @@ size_t header_callback(char *content, size_t size, size_t nmemb,
 
     userdata->headers = realloc(userdata->headers,
                                 current_size + sizeof(char*));
-    if (userdata->headers == NULL) {
-        printf("[!] librequests error: Memory allocation failed.");
-        exit(1);
-    }
+    if (userdata->headers == NULL)
+        return -1;
 
     userdata->headers_size++;
     userdata->headers[userdata->headers_size - 1] = strndup(content,
-                                                         size * nmemb + 1);
+                                                            size * nmemb + 1);
     return real_size;
 }
 
@@ -241,6 +237,9 @@ CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
  * code with response code, and size with size of response. To submit no
  * data, use NULL for data, and 0 for data_size.
  *
+ * Returns CURLcode provided from curl_easy_perform. CURLE_OK is returned on
+ * success.
+ *
  * Typically this function isn't used directly, use requests_post() or
  * requests_put() instead.
  *
@@ -321,7 +320,9 @@ void common_opt(CURL *curl, req_t *req)
 }
 
 /*
- * Utility function for creating custom user agent.
+ * user_agent - Utility function for creating custom user agent.
+ *
+ * Returns a char* containing the user agent, or NULL on failure.
  */
 char *user_agent(void)
 {
@@ -336,10 +337,9 @@ char *user_agent(void)
     ua_size += strlen(version);
 
     char *ua = malloc(ua_size);
-    if (ua == NULL) {
-        printf("[!] librequests error: Memory allocation failed");
-        exit(1);
-    }
+    if (ua == NULL)
+        return NULL;
+
     snprintf(ua, ua_size, "%s %s/%s", basic, kernel, version);
 
     return ua;
