@@ -85,11 +85,11 @@ size_t callback(char *content, size_t size, size_t nmemb, req_t *userdata)
 
     userdata->size += real_size;
 
-    char *responsetext = strndup(content, size * nmemb + 1);
+    char *responsetext = strndup(content, real_size + 1);
     if (responsetext == NULL)
         return -1;
 
-    strcat(userdata->text, responsetext);
+    strncat(userdata->text, responsetext, real_size + 1);
 
     free(responsetext);
     return real_size;
@@ -171,9 +171,10 @@ CURLcode requests_get(CURL *curl, req_t *req, char *url)
  */
 char *requests_url_encode(CURL *curl, char **data, int data_size)
 {
-    char *key, *val;
+    char *key, *val, *tmp;
     int offset;
     size_t term_size;
+    size_t tmp_len;
 
     if (data_size % 2 != 0)
         return NULL;
@@ -182,8 +183,8 @@ char *requests_url_encode(CURL *curl, char **data, int data_size)
     size_t total_size = 0;
     int i = 0;
     for (i = 0; i < data_size; i++) {
-        char *tmp = data[i];
-        size_t tmp_len = strlen(tmp);
+        tmp = data[i];
+        tmp_len = strlen(tmp);
         total_size += tmp_len;
     }
 
@@ -327,16 +328,14 @@ void common_opt(CURL *curl, req_t *req)
 char *user_agent(void)
 {
     int ua_size = 3; /* ' ', /, \0 */
-    char *basic = "librequests/0.1";
-    ua_size += strlen(basic);
+    char *basic = "librequests/0.1", *kernel, *version, *ua;
     struct utsname name;
     uname(&name);
-    char *kernel = name.sysname;
-    ua_size += strlen(kernel);
-    char *version = name.release;
-    ua_size += strlen(version);
+    kernel = name.sysname;
+    version = name.release;
+    ua_size += (strlen(basic) + strlen(kernel) + strlen(version));
 
-    char *ua = malloc(ua_size);
+    ua = malloc(ua_size);
     if (ua == NULL)
         return NULL;
 
