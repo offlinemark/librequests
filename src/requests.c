@@ -40,18 +40,18 @@ CURL *requests_init(req_t *req)
     /* if this is not their first request */
     if (req->url != NULL) {
         free(req->text);
-        free(req->headers);
+        free(req->resp_hdrv);
     }
 
     req->code = 0;
     req->url = NULL;
     req->text = calloc(1, 1);
     req->size = 0;
-    req->headers = calloc(1, 1);
-    req->headers_size = 0;
+    req->resp_hdrv = calloc(1, 1);
+    req->resp_hdrc = 0;
     req->ok = 0;
 
-    if (req->text == NULL || req->headers == NULL)
+    if (req->text == NULL || req->resp_hdrv == NULL)
         return NULL;
 
     return curl_easy_init();
@@ -64,10 +64,10 @@ void requests_close(req_t *req)
 {
     free(req->text);
     int i = 0;
-    for (i = 0; i < req->headers_size; i++) {
-        free(req->headers[i]);
+    for (i = 0; i < req->resp_hdrc; i++) {
+        free(req->resp_hdrv[i]);
     }
-    free(req->headers);
+    free(req->resp_hdrv);
 }
 
 /*
@@ -103,19 +103,19 @@ size_t header_callback(char *content, size_t size, size_t nmemb,
                        req_t *userdata)
 {
     size_t real_size = size * nmemb;
-    size_t current_size = userdata->headers_size * sizeof(char*);
+    size_t current_size = userdata->resp_hdrc * sizeof(char*);
 
     /* the last header is always "\r\n" which we'll intentionally skip */
     if (strcmp(content, "\r\n") == 0)
         return real_size;
 
-    userdata->headers = realloc(userdata->headers,
+    userdata->resp_hdrv = realloc(userdata->resp_hdrv,
                                 current_size + sizeof(char*));
-    if (userdata->headers == NULL)
+    if (userdata->resp_hdrv == NULL)
         return -1;
 
-    userdata->headers_size++;
-    userdata->headers[userdata->headers_size - 1] = strndup(content,
+    userdata->resp_hdrc++;
+    userdata->resp_hdrv[userdata->resp_hdrc - 1] = strndup(content,
                                                             size * nmemb + 1);
     return real_size;
 }
@@ -221,15 +221,15 @@ CURLcode requests_put(CURL *curl, req_t *req, char *url, char *data)
 }
 
 CURLcode requests_post_headers(CURL *curl, req_t *req, char *url, char *data,
-                               char **headers, int headers_size)
+                               char **resp_hdrv, int resp_hdrc)
 {
-    return requests_pt(curl, req, url, data, headers, headers_size, 0);
+    return requests_pt(curl, req, url, data, resp_hdrv, resp_hdrc, 0);
 }
 
 CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
-                              char **headers, int headers_size)
+                              char **resp_hdrv, int resp_hdrc)
 {
-    return requests_pt(curl, req, url, data, headers, headers_size, 1);
+    return requests_pt(curl, req, url, data, resp_hdrv, resp_hdrc, 1);
 }
 
 /*
@@ -248,12 +248,12 @@ CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
  * @req: request struct
  * @url: url to send request to
  * @data: url encoded data to send in request body
- * @headers: char* array of custom headers
- * @headers_size: length of `headers`
+ * @resp_hdrv: char* array of custom headers
+ * @resp_hdrc: length of `resp_hdrv`
  * @put_flag: if not zero, sends PUT request, otherwise uses POST
  */
 CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
-                     char **headers, int headers_size, int put_flag)
+                     char **resp_hdrv, int resp_hdrc, int put_flag)
 {
     CURLcode rc;
     char *ua = user_agent();
@@ -269,15 +269,15 @@ CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
         /* content length header defaults to -1, which causes request to fail
            sometimes, so we need to manually set it to 0 */
         slist = curl_slist_append(slist, "Content-Length: 0");
-        if (headers == NULL)
+        if (resp_hdrv == NULL)
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
     }
 
     /* headers */
-    if (headers != NULL) {
+    if (resp_hdrv != NULL) {
         int i = 0;
-        for (i = 0; i < headers_size; i++) {
-            slist = curl_slist_append(slist, headers[i]);
+        for (i = 0; i < resp_hdrc; i++) {
+            slist = curl_slist_append(slist, resp_hdrv[i]);
         }
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
     }

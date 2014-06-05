@@ -38,8 +38,10 @@ typedef struct {
     char *url;
     char *text;
     size_t size;
-    char **headers;
-    size_t headers_size;
+    char **req_hdrv;
+    size_t req_hdrc;
+    char **resp_hdrv;
+    size_t resp_hdrc;
     int ok;
 } req_t;
 
@@ -48,14 +50,14 @@ extern const req_t REQ_DEFAULT;
 CURL *requests_init(req_t *req);
 void requests_close(req_t *req);
 CURLcode requests_get(CURL *curl, req_t *req, char *url);
-CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data, char **headers,
-                     int headers_size, int put_flag);
+CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data, char **resp_hdrv,
+                     int resp_hdrc, int put_flag);
 CURLcode requests_post(CURL *curl, req_t *req, char *url, char *data);
 CURLcode requests_put(CURL *curl, req_t *req, char *url, char *data);
 CURLcode requests_post_headers(CURL *curl, req_t *req, char *url, char *data,
-                               char **headers, int headers_size);
+                               char **resp_hdrv, int resp_hdrc);
 CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
-                              char **headers, int headers_size);
+                              char **resp_hdrv, int resp_hdrc);
 void common_opt(CURL *curl, req_t *req);
 char *requests_url_encode(CURL *curl, char **data, int data_size);
 size_t callback(char *content, size_t size, size_t nmemb, req_t *userdata);
