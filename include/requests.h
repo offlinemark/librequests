@@ -45,8 +45,6 @@ typedef struct {
     int ok;
 } req_t;
 
-extern const req_t REQ_DEFAULT;
-
 CURL *requests_init(req_t *req);
 void requests_close(req_t *req);
 CURLcode requests_get(CURL *curl, req_t *req, char *url);

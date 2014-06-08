@@ -26,7 +26,7 @@
 
 #include "requests.h"
 
-const req_t REQ_DEFAULT = {0, NULL, NULL, 0, NULL, 0, 0};
+static int IS_FIRST = 1;
 
 /*
  * requests_init - Initializes requests struct data members
@@ -37,23 +37,25 @@ const req_t REQ_DEFAULT = {0, NULL, NULL, 0, NULL, 0, 0};
  */
 CURL *requests_init(req_t *req)
 {
-    /* if this is not their first request */
-    if (req->url != NULL) {
-        free(req->text);
-        free(req->resp_hdrv);
-    }
+
+    /* if this is not their first request, free previous memory */
+    if (!IS_FIRST)
+        requests_close(req);
 
     req->code = 0;
     req->url = NULL;
     req->text = calloc(1, 1);
     req->size = 0;
+    req->req_hdrv = calloc(1, 1);
+    req->req_hdrc = 0;
     req->resp_hdrv = calloc(1, 1);
     req->resp_hdrc = 0;
-    req->ok = 0;
+    req->ok = -1;
 
-    if (req->text == NULL || req->resp_hdrv == NULL)
+    if (req->text == NULL || req->resp_hdrv == NULL || req->resp_hdrv == NULL)
         return NULL;
 
+    IS_FIRST = 0;
     return curl_easy_init();
 }
 
@@ -62,12 +64,19 @@ CURL *requests_init(req_t *req)
  */
 void requests_close(req_t *req)
 {
-    free(req->text);
     int i = 0;
-    for (i = 0; i < req->resp_hdrc; i++) {
+
+    for (i = 0; i < req->resp_hdrc; i++)
         free(req->resp_hdrv[i]);
-    }
+
+    for (i = 0; i < req->req_hdrc; i++)
+        free(req->req_hdrv[i]);
+
+    free(req->text);
     free(req->resp_hdrv);
+    free(req->req_hdrv);
+
+    IS_FIRST = 1;
 }
 
 /*
@@ -110,13 +119,13 @@ size_t header_callback(char *content, size_t size, size_t nmemb,
         return real_size;
 
     userdata->resp_hdrv = realloc(userdata->resp_hdrv,
-                                current_size + sizeof(char*));
+                                  current_size + sizeof(char*));
     if (userdata->resp_hdrv == NULL)
         return -1;
 
     userdata->resp_hdrc++;
     userdata->resp_hdrv[userdata->resp_hdrc - 1] = strndup(content,
-                                                            size * nmemb + 1);
+                                                           size * nmemb + 1);
     return real_size;
 }
 
