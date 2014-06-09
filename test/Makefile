@@ -8,7 +8,7 @@ BIN = test
 SRC = $(wildcard *.c)
 BUILD = ../build
 
-test: $(SRC)
+test:
 	$(CC) -o $(BIN) $(SRC) $(FLAGS) -L $(BUILD) -l requests -l curl
 	@echo
 	@echo Compiled Tests.

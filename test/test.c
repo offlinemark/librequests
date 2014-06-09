@@ -25,7 +25,7 @@ TEST get()
     long code = 200;
     size_t size = 33;
 
-    req_t req = REQ_DEFAULT;
+    req_t req;
     CURL *curl = requests_init(&req);
     requests_get(curl, &req, example);
 
@@ -48,7 +48,7 @@ TEST post()
     };
     int data_size = sizeof(data)/sizeof(char*);
 
-    req_t req = REQ_DEFAULT;
+    req_t req;
     CURL *curl = requests_init(&req);
     char *body = requests_url_encode(curl, data, data_size);
     requests_post(curl, &req, posttestserver, body);
@@ -67,7 +67,7 @@ TEST post_nodata()
 {
     long code = 200;
 
-    req_t req = REQ_DEFAULT;
+    req_t req;
     CURL *curl = requests_init(&req);
     requests_post(curl, &req, posttestserver, NULL);
 
@@ -89,7 +89,7 @@ TEST post_headers()
     };
     int headers_size = sizeof(resp_hdrv)/sizeof(char*);
 
-    req_t req = REQ_DEFAULT;
+    req_t req;
     CURL *curl = requests_init(&req);
     requests_post_headers(curl, &req, posttestserver, NULL, resp_hdrv,
                           headers_size);
@@ -112,7 +112,7 @@ TEST put()
     };
     int data_size = sizeof(data)/sizeof(char*);
 
-    req_t req = REQ_DEFAULT;
+    req_t req;
     CURL *curl = requests_init(&req);
     char *body = requests_url_encode(curl, data, data_size);
     requests_put(curl, &req, posttestserver, body);
