@@ -25,14 +25,14 @@ TEST get()
     long code = 200;
     size_t size = 33;
 
-    req_t req = REQ_DEFAULT;
+    req_t req;
     CURL *curl = requests_init(&req);
     requests_get(curl, &req, example);
 
     ASSERT_EQ(code, req.code);
     ASSERT_EQ(size, req.size);
     ASSERT(strcmp(example_text, req.text) == 0);
-    ASSERT(strcmp(req.headers[0], "HTTP/1.1 200 OK\r\n") == 0);
+    ASSERT(strcmp(req.resp_hdrv[0], "HTTP/1.1 200 OK\r\n") == 0);
     ASSERT_EQ(1, req.ok);
 
     requests_close(&req);
@@ -48,13 +48,13 @@ TEST post()
     };
     int data_size = sizeof(data)/sizeof(char*);
 
-    req_t req = REQ_DEFAULT;
+    req_t req;
     CURL *curl = requests_init(&req);
     char *body = requests_url_encode(curl, data, data_size);
     requests_post(curl, &req, posttestserver, body);
 
     ASSERT_EQ(code, req.code);
-    ASSERT(strcmp(req.headers[0], "HTTP/1.1 200 OK\r\n") == 0);
+    ASSERT(strcmp(req.resp_hdrv[0], "HTTP/1.1 200 OK\r\n") == 0);
     ASSERT(strstr(req.text, "Successfully") != NULL);
     ASSERT_EQ(1, req.ok);
 
@@ -67,12 +67,12 @@ TEST post_nodata()
 {
     long code = 200;
 
-    req_t req = REQ_DEFAULT;
+    req_t req;
     CURL *curl = requests_init(&req);
     requests_post(curl, &req, posttestserver, NULL);
 
     ASSERT_EQ(code, req.code);
-    ASSERT(strcmp(req.headers[0], "HTTP/1.1 200 OK\r\n") == 0);
+    ASSERT(strcmp(req.resp_hdrv[0], "HTTP/1.1 200 OK\r\n") == 0);
     ASSERT(strstr(req.text, "Successfully") != NULL);
     ASSERT_EQ(1, req.ok);
 
@@ -83,18 +83,19 @@ TEST post_nodata()
 TEST post_headers()
 {
     long code = 200;
-    char *headers[] = {
+    char *resp_hdrv[] = {
         "Content-Type: application/json",
         "Content-Hype: dude"
     };
-    int headers_size = sizeof(headers)/sizeof(char*);
+    int headers_size = sizeof(resp_hdrv)/sizeof(char*);
 
-    req_t req = REQ_DEFAULT;
+    req_t req;
     CURL *curl = requests_init(&req);
-    requests_post_headers(curl, &req, posttestserver, NULL, headers, headers_size);
+    requests_post_headers(curl, &req, posttestserver, NULL, resp_hdrv,
+                          headers_size);
 
     ASSERT_EQ(code, req.code);
-    ASSERT(strcmp(req.headers[0], "HTTP/1.1 200 OK\r\n") == 0);
+    ASSERT(strcmp(req.resp_hdrv[0], "HTTP/1.1 200 OK\r\n") == 0);
     ASSERT(strstr(req.text, "Successfully") != NULL);
     ASSERT_EQ(1, req.ok);
 
@@ -111,13 +112,13 @@ TEST put()
     };
     int data_size = sizeof(data)/sizeof(char*);
 
-    req_t req = REQ_DEFAULT;
+    req_t req;
     CURL *curl = requests_init(&req);
     char *body = requests_url_encode(curl, data, data_size);
     requests_put(curl, &req, posttestserver, body);
 
     ASSERT_EQ(code, req.code);
-    ASSERT(strcmp(req.headers[0], "HTTP/1.1 200 OK\r\n") == 0);
+    ASSERT(strcmp(req.resp_hdrv[0], "HTTP/1.1 200 OK\r\n") == 0);
     ASSERT(strstr(req.text, "Successfully") != NULL);
     ASSERT_EQ(1, req.ok);
 

@@ -32,7 +32,7 @@ static C library that you can compile your own code against.
 
 int main(int argc, const char *argv[])
 {
-    req_t req = REQ_DEFAULT;          /* declare struct used to store data */
+    req_t req;                        /* declare struct used to store data */
     CURL *curl = requests_init(&req); /* setup */
 
     requests_get(curl, &req, "http://example.com"); /* submit GET request */
@@ -50,7 +50,7 @@ and `librequests.a` are in the same directory. Also make sure you have gcc or
 equivalent and libcurl installed. Then compile it using:
 
 ```bash
-$ gcc -o get get.c -L . -l requests -l curl
+$ gcc -o get get.c -L. -lrequests -lcurl
 ```
 
 And you should see:
@@ -92,11 +92,11 @@ typedef struct {
 At the beginning of every program that uses this library should be two lines.
 
 ```
-req_t req = REQ_DEFAULT;
+req_t req;
 CURL *curl = requests_init(&req);
 ```
 
-The first line intializes the `req_t` struct. The second line gets everything
+The first line declares the `req_t` struct. The second line gets everything
 set up and returns the curl handle that libcurl needs, which needs to be
 passed into future functions.
 
