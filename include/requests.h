@@ -58,7 +58,8 @@ CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
                               char **resp_hdrv, int resp_hdrc);
 void common_opt(CURL *curl, req_t *req);
 char *requests_url_encode(CURL *curl, char **data, int data_size);
-size_t callback(char *content, size_t size, size_t nmemb, req_t *userdata);
+size_t resp_callback(char *content, size_t size, size_t nmemb,
+                     req_t *userdata);
 size_t header_callback(char *content, size_t size, size_t nmemb,
                        req_t *userdata);
 char *user_agent(void);

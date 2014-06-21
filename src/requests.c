@@ -82,23 +82,26 @@ void requests_close(req_t *req)
 /*
  * Callback function for requests, may be called multiple times per request.
  * Allocates memory and assembles response data.
+ *
+ * Note: `content' will not be NULL terminated.
  */
-size_t callback(char *content, size_t size, size_t nmemb, req_t *userdata)
+size_t resp_callback(char *content, size_t size, size_t nmemb, req_t *userdata)
 {
     size_t real_size = size * nmemb;
 
-    /* extra 1 is for null byte */
+    /* extra 1 is for NULL terminator */
     userdata->text = realloc(userdata->text, userdata->size + real_size + 1);
     if (userdata->text == NULL)
         return -1;
 
     userdata->size += real_size;
 
+    /* create NULL terminated version of `content' */
     char *responsetext = strndup(content, real_size + 1);
     if (responsetext == NULL)
         return -1;
 
-    strncat(userdata->text, responsetext, real_size + 1);
+    strncat(userdata->text, responsetext, real_size);
 
     free(responsetext);
     return real_size;
@@ -149,7 +152,7 @@ CURLcode requests_get(CURL *curl, req_t *req, char *url)
     long code = 0;
 
     common_opt(curl, req);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, resp_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, req);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, ua);
     rc = curl_easy_perform(curl);
@@ -323,7 +326,7 @@ CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
 void common_opt(CURL *curl, req_t *req)
 {
     curl_easy_setopt(curl, CURLOPT_URL, req->url);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, resp_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, req);
     curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, header_callback);
     curl_easy_setopt(curl, CURLOPT_HEADERDATA, req);
