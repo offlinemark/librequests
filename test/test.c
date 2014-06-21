@@ -9,7 +9,7 @@
 #endif
 
 char *example = "https://gist.githubusercontent.com/mossberg/91093537c33e69e4da2c/raw/librequests_test.txt";
-char *example_text = "Simple test file for librequests.\r";
+char *example_text = "Simple test file for librequests.";
 char *posttestserver = "http://posttestserver.com/post.php";
 
 void test_print(req_t *req)
