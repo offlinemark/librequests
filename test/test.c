@@ -96,8 +96,10 @@ TEST post_headers()
 
     ASSERT_EQ(code, req.code);
     ASSERT(strcmp(req.resp_hdrv[0], "HTTP/1.1 200 OK\r\n") == 0);
+    ASSERT(strcmp(req.req_hdrv[0], "Content-Type: application/json") == 0);
     ASSERT(strstr(req.text, "Successfully") != NULL);
     ASSERT_EQ(1, req.ok);
+    ASSERT_EQ(2, req.req_hdrc);
 
     requests_close(&req);
     PASS();
