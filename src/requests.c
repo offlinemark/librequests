@@ -28,6 +28,10 @@
 
 static int IS_FIRST = 1;
 
+static CURLcode process_custom_headers(struct curl_slist **slist,
+                                       req_t *req, char **custom_hdrv,
+                                       int custom_hdrc);
+
 /*
  * requests_init - Initializes requests struct data members
  *
@@ -257,7 +261,8 @@ CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
  * data, use NULL for data, and 0 for data_size.
  *
  * Returns CURLcode provided from curl_easy_perform. CURLE_OK is returned on
- * success.
+ * success. -1 returned if there are issues with libcurl's internal linked list
+ * append.
  *
  * Typically this function isn't used directly, use requests_post() or
  * requests_put() instead.
@@ -287,23 +292,17 @@ CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
         /* content length header defaults to -1, which causes request to fail
            sometimes, so we need to manually set it to 0 */
         slist = curl_slist_append(slist, "Content-Length: 0");
+        if (slist == NULL)
+            return -1;
         if (custom_hdrv == NULL)
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
     }
 
     /* headers */
     if (custom_hdrv != NULL) {
-        int i = 0;
-        size_t current_size = 0;
-        for (i = 0; i < custom_hdrc; i++) {
-            slist = curl_slist_append(slist, custom_hdrv[i]);
-            current_size = req->req_hdrc * sizeof(char*);
-            req->req_hdrv = realloc(req->req_hdrv, current_size + sizeof(char*));
-            if (req->req_hdrv == NULL)
-                return CURLE_OUT_OF_MEMORY;
-            req->req_hdrc++;
-            req->req_hdrv[req->req_hdrc - 1] = strndup(custom_hdrv[i], strlen(custom_hdrv[i]));
-        }
+        rc = process_custom_headers(&slist, req, custom_hdrv, custom_hdrc);
+        if (rc != CURLE_OK)
+            return rc;
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
     }
 
@@ -334,7 +333,50 @@ CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
 }
 
 /*
- * Utility function for executing common curl options.
+ * process_custom_headers -- Adds custom headers to request and populates the
+ * req_headerv and req_hdrc fields of the request struct using the supplied
+ * custom headers.
+ *
+ * Returns CURLE_OK on success, CURLE_OUT_OF_MEMORY if realloc failed to
+ * increase size of req_hdrv, or -1 if libcurl's linked list append fails.
+ *
+ * @slist: internal libcurl slist (string linked list)
+ * @req: request struct
+ * @custom_hdrv: char* array of custom headers
+ * @custom_hdrc: length of `custom_hdrv`
+ */
+static CURLcode process_custom_headers(struct curl_slist **slist,
+                                       req_t *req, char **custom_hdrv,
+                                       int custom_hdrc)
+{
+    int i = 0;
+    size_t current_size = 0;
+
+    for (i = 0; i < custom_hdrc; i++) {
+        /* add header to request */
+        *slist = curl_slist_append(*slist, custom_hdrv[i]);
+        if (*slist == NULL)
+            return -1;
+
+        current_size = req->req_hdrc * sizeof(char*);
+
+        /* append header to array */
+        req->req_hdrv = realloc(req->req_hdrv, current_size + sizeof(char*));
+        if (req->req_hdrv == NULL)
+            return CURLE_OUT_OF_MEMORY;
+        req->req_hdrc++;
+        req->req_hdrv[req->req_hdrc - 1] = strndup(custom_hdrv[i],
+                                                   strlen(custom_hdrv[i]));
+    }
+
+    return CURLE_OK;
+}
+
+/*
+ * common_opt -- Sets common libcurl options.
+ *
+ * @curl: libcurl handle
+ * @req: request struct
  */
 void common_opt(CURL *curl, req_t *req)
 {
@@ -346,7 +388,7 @@ void common_opt(CURL *curl, req_t *req)
 }
 
 /*
- * user_agent - Utility function for creating custom user agent.
+ * user_agent - Creates custom user agent.
  *
  * Returns a char* containing the user agent, or NULL on failure.
  */
@@ -370,8 +412,10 @@ char *user_agent(void)
 }
 
 /*
- * Utility function for setting "ok" struct field. Response codes of 400+
- * are considered "not ok".
+ * check_ok -- Utility function for setting "ok" struct field. Response codes
+ * of 400+ are considered "not ok".
+ *
+ * @req: request struct
  */
 void check_ok(req_t *req)
 {
