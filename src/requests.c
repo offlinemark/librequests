@@ -28,6 +28,7 @@
 
 static int IS_FIRST = 1;
 
+static int hdrv_append(char ***hdrv, int *hdrc, char *new);
 static CURLcode process_custom_headers(struct curl_slist **slist,
                                        req_t *req, char **custom_hdrv,
                                        int custom_hdrc);
@@ -125,20 +126,14 @@ size_t header_callback(char *content, size_t size, size_t nmemb,
                        req_t *userdata)
 {
     size_t real_size = size * nmemb;
-    size_t current_size = userdata->resp_hdrc * sizeof(char*);
 
     /* the last header is always "\r\n" which we'll intentionally skip */
     if (strcmp(content, "\r\n") == 0)
         return real_size;
 
-    userdata->resp_hdrv = realloc(userdata->resp_hdrv,
-                                  current_size + sizeof(char*));
-    if (userdata->resp_hdrv == NULL)
+    if (hdrv_append(&userdata->resp_hdrv, &userdata->resp_hdrc, content))
         return -1;
 
-    userdata->resp_hdrc++;
-    userdata->resp_hdrv[userdata->resp_hdrc - 1] = strndup(content,
-                                                           size * nmemb + 1);
     return real_size;
 }
 
@@ -291,11 +286,14 @@ CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
     } else {
         /* content length header defaults to -1, which causes request to fail
            sometimes, so we need to manually set it to 0 */
-        slist = curl_slist_append(slist, "Content-Length: 0");
+        char *cl_header = "Content-Length: 0";
+        slist = curl_slist_append(slist, cl_header);
         if (slist == NULL)
             return -1;
         if (custom_hdrv == NULL)
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
+
+        hdrv_append(&req->req_hdrv, &req->req_hdrc, cl_header);
     }
 
     /* headers */
@@ -345,31 +343,42 @@ CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
  * @custom_hdrv: char* array of custom headers
  * @custom_hdrc: length of `custom_hdrv`
  */
-static CURLcode process_custom_headers(struct curl_slist **slist,
-                                       req_t *req, char **custom_hdrv,
-                                       int custom_hdrc)
+static CURLcode process_custom_headers(struct curl_slist **slist, req_t *req,
+                                       char **custom_hdrv, int custom_hdrc)
 {
     int i = 0;
-    size_t current_size = 0;
 
     for (i = 0; i < custom_hdrc; i++) {
         /* add header to request */
         *slist = curl_slist_append(*slist, custom_hdrv[i]);
         if (*slist == NULL)
             return -1;
-
-        current_size = req->req_hdrc * sizeof(char*);
-
-        /* append header to array */
-        req->req_hdrv = realloc(req->req_hdrv, current_size + sizeof(char*));
-        if (req->req_hdrv == NULL)
+        if (hdrv_append(&req->req_hdrv, &req->req_hdrc, custom_hdrv[i]))
             return CURLE_OUT_OF_MEMORY;
-        req->req_hdrc++;
-        req->req_hdrv[req->req_hdrc - 1] = strndup(custom_hdrv[i],
-                                                   strlen(custom_hdrv[i]));
     }
 
     return CURLE_OK;
+}
+
+/*
+ * hdrv_append -- Append to an arbitrary char* array and increments the given
+ * array length.
+ *
+ * Returns 0 on success and -1 on memory error.
+ *
+ * @hdrv: pointer to the char* array
+ * @hdrc: length of `hdrv' (NOTE: this value gets updated)
+ * @new: char* to append
+ */
+static int hdrv_append(char ***hdrv, int *hdrc, char *new)
+{
+    size_t current_size = *hdrc * sizeof(char*);
+    *hdrv = realloc(*hdrv, current_size + sizeof(char*));
+    if (*hdrv == NULL)
+        return -1;
+    (*hdrc)++;
+    (*hdrv)[*hdrc - 1] = strndup(new, strlen(new));
+    return 0;
 }
 
 /*
