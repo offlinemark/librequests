@@ -29,6 +29,15 @@
 static int IS_FIRST = 1;
 
 /*
+ * Prototypes
+ */
+static CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
+                            char **custom_hdrv, int custom_hdrc, int put_flag);
+static void common_opt(CURL *curl, req_t *req);
+static char *user_agent(void);
+static void check_ok(req_t *req);
+
+/*
  * requests_init - Initializes requests struct data members
  *
  * Returns libcurl handle on success, or NULL on failure.
@@ -91,7 +100,8 @@ void requests_close(req_t *req)
  *
  * Note: `content' will not be NULL terminated.
  */
-size_t resp_callback(char *content, size_t size, size_t nmemb, req_t *userdata)
+static size_t resp_callback(char *content, size_t size, size_t nmemb,
+                            req_t *userdata)
 {
     size_t real_size = size * nmemb;
 
@@ -117,8 +127,8 @@ size_t resp_callback(char *content, size_t size, size_t nmemb, req_t *userdata)
  * Callback function for headers, called once for each header. Allocates
  * memory and assembles headers into string array.
  */
-size_t header_callback(char *content, size_t size, size_t nmemb,
-                       req_t *userdata)
+static size_t header_callback(char *content, size_t size, size_t nmemb,
+                              req_t *userdata)
 {
     size_t real_size = size * nmemb;
     size_t current_size = userdata->resp_hdrc * sizeof(char*);
@@ -270,8 +280,8 @@ CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
  * @custom_hdrc: length of `custom_hdrv`
  * @put_flag: if not zero, sends PUT request, otherwise uses POST
  */
-CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
-                     char **custom_hdrv, int custom_hdrc, int put_flag)
+static CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
+                            char **custom_hdrv, int custom_hdrc, int put_flag)
 {
     CURLcode rc;
     char *ua = user_agent();
@@ -329,7 +339,7 @@ CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
 /*
  * Utility function for executing common curl options.
  */
-void common_opt(CURL *curl, req_t *req)
+static void common_opt(CURL *curl, req_t *req)
 {
     curl_easy_setopt(curl, CURLOPT_URL, req->url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, resp_callback);
@@ -343,7 +353,7 @@ void common_opt(CURL *curl, req_t *req)
  *
  * Returns a char* containing the user agent, or NULL on failure.
  */
-char *user_agent(void)
+static char *user_agent(void)
 {
     int ua_size = 3; /* ' ', /, \0 */
     char *basic = "librequests/0.1", *kernel, *version, *ua;
@@ -366,7 +376,7 @@ char *user_agent(void)
  * Utility function for setting "ok" struct field. Response codes of 400+
  * are considered "not ok".
  */
-void check_ok(req_t *req)
+static void check_ok(req_t *req)
 {
     if (req->code >= 400 || req->code == 0)
         req->ok = 0;
