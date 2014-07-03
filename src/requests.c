@@ -266,12 +266,12 @@ CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
  * @req: request struct
  * @url: url to send request to
  * @data: url encoded data to send in request body
- * @resp_hdrv: char* array of custom headers
- * @resp_hdrc: length of `resp_hdrv`
+ * @custom_hdrv: char* array of custom headers
+ * @custom_hdrc: length of `custom_hdrv`
  * @put_flag: if not zero, sends PUT request, otherwise uses POST
  */
 CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
-                     char **resp_hdrv, int resp_hdrc, int put_flag)
+                     char **custom_hdrv, int custom_hdrc, int put_flag)
 {
     CURLcode rc;
     char *ua = user_agent();
@@ -287,15 +287,15 @@ CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
         /* content length header defaults to -1, which causes request to fail
            sometimes, so we need to manually set it to 0 */
         slist = curl_slist_append(slist, "Content-Length: 0");
-        if (resp_hdrv == NULL)
+        if (custom_hdrv == NULL)
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
     }
 
     /* headers */
-    if (resp_hdrv != NULL) {
+    if (custom_hdrv != NULL) {
         int i = 0;
-        for (i = 0; i < resp_hdrc; i++) {
-            slist = curl_slist_append(slist, resp_hdrv[i]);
+        for (i = 0; i < custom_hdrc; i++) {
+            slist = curl_slist_append(slist, custom_hdrv[i]);
         }
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
     }
