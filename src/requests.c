@@ -44,15 +44,21 @@ CURL *requests_init(req_t *req)
 
     req->code = 0;
     req->url = NULL;
-    req->text = calloc(1, 1);
     req->size = 0;
-    req->req_hdrv = calloc(1, 1);
     req->req_hdrc = 0;
-    req->resp_hdrv = calloc(1, 1);
     req->resp_hdrc = 0;
     req->ok = -1;
 
-    if (req->text == NULL || req->resp_hdrv == NULL || req->resp_hdrv == NULL)
+    req->text = calloc(1, 1);
+    if (req->text == NULL)
+        return NULL;
+
+    req->req_hdrv = calloc(1, 1);
+    if (req->req_hdrv == NULL)
+        return NULL;
+
+    req->resp_hdrv = calloc(1, 1);
+    if (req->resp_hdrv == NULL)
         return NULL;
 
     IS_FIRST = 0;
