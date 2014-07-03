@@ -294,8 +294,14 @@ CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
     /* headers */
     if (custom_hdrv != NULL) {
         int i = 0;
+        size_t current_size = req->req_hdrc * sizeof(char*);
         for (i = 0; i < custom_hdrc; i++) {
             slist = curl_slist_append(slist, custom_hdrv[i]);
+            req->req_hdrv = realloc(req->req_hdrv, current_size + sizeof(char*));
+            if (req->req_hdrv == NULL)
+                return CURLE_OUT_OF_MEMORY;
+            req->req_hdrc++;
+            req->req_hdrv[req->req_hdrc - 1] = strndup(custom_hdrv[i], strlen(custom_hdrv[i]));
         }
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
     }
