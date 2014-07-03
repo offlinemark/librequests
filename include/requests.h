@@ -39,9 +39,9 @@ typedef struct {
     char *text;
     size_t size;
     char **req_hdrv;
-    size_t req_hdrc;
+    int req_hdrc;
     char **resp_hdrv;
-    size_t resp_hdrc;
+    int resp_hdrc;
     int ok;
 } req_t;
 
