@@ -33,6 +33,8 @@
 #include <curl/curl.h>
 #include <sys/utsname.h>
 
+#define __LIBREQ_VERS__ "v0.1"
+
 typedef struct {
     long code;
     char *url;

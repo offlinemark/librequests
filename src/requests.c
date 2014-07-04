@@ -411,12 +411,11 @@ static char *user_agent(void)
 {
     struct utsname name;
     uname(&name);
-    char *basic = "librequests/0.1";
     char *kernel = name.sysname;
     char *version = name.release;
 
     char *ua;
-    asprintf(&ua, "%s %s/%s", basic, kernel, version);
+    asprintf(&ua, "librequests/%s %s/%s", __LIBREQ_VERS__, kernel, version);
 
     return ua;
 }
