@@ -33,36 +33,31 @@
 #include <curl/curl.h>
 #include <sys/utsname.h>
 
+#define __LIBREQ_VERS__ "v0.1"
+
 typedef struct {
     long code;
     char *url;
     char *text;
     size_t size;
     char **req_hdrv;
-    size_t req_hdrc;
+    int req_hdrc;
     char **resp_hdrv;
-    size_t resp_hdrc;
+    int resp_hdrc;
     int ok;
 } req_t;
 
 CURL *requests_init(req_t *req);
 void requests_close(req_t *req);
 CURLcode requests_get(CURL *curl, req_t *req, char *url);
-CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data, char **resp_hdrv,
-                     int resp_hdrc, int put_flag);
 CURLcode requests_post(CURL *curl, req_t *req, char *url, char *data);
 CURLcode requests_put(CURL *curl, req_t *req, char *url, char *data);
+CURLcode requests_get_headers(CURL *curl, req_t *req, char *url, 
+                              char **custom_hdrv, int custom_hdrc);
 CURLcode requests_post_headers(CURL *curl, req_t *req, char *url, char *data,
-                               char **resp_hdrv, int resp_hdrc);
+                               char **custom_hdrv, int custom_hdrc);
 CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
-                              char **resp_hdrv, int resp_hdrc);
-void common_opt(CURL *curl, req_t *req);
+                              char **custom_hdrv, int custom_hdrc);
 char *requests_url_encode(CURL *curl, char **data, int data_size);
-size_t resp_callback(char *content, size_t size, size_t nmemb,
-                     req_t *userdata);
-size_t header_callback(char *content, size_t size, size_t nmemb,
-                       req_t *userdata);
-char *user_agent(void);
-void check_ok(req_t *req);
 
 #endif

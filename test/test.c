@@ -39,6 +39,32 @@ TEST get()
     PASS();
 }
 
+TEST get_headers()
+{
+    long code = 200;
+    size_t size = 33;
+    char *custom_hdrv[] = {
+        "Content-Type: application/json",
+        "Content-Hype: dude"
+    };
+    int headers_size = sizeof(custom_hdrv)/sizeof(char*);
+
+    req_t req;
+    CURL *curl = requests_init(&req);
+    requests_get_headers(curl, &req, example, custom_hdrv, headers_size);
+
+    ASSERT_EQ(code, req.code);
+    ASSERT_EQ(size, req.size);
+    ASSERT(strcmp(example_text, req.text) == 0);
+    ASSERT(strcmp(req.resp_hdrv[0], "HTTP/1.1 200 OK\r\n") == 0);
+    ASSERT(strcmp(req.req_hdrv[0], "Content-Type: application/json") == 0);
+    ASSERT_EQ(1, req.ok);
+    ASSERT_EQ(2, req.req_hdrc);
+
+    requests_close(&req);
+    PASS();
+}
+
 TEST post()
 {
     long code = 200;
@@ -83,21 +109,23 @@ TEST post_nodata()
 TEST post_headers()
 {
     long code = 200;
-    char *resp_hdrv[] = {
+    char *custom_hdrv[] = {
         "Content-Type: application/json",
         "Content-Hype: dude"
     };
-    int headers_size = sizeof(resp_hdrv)/sizeof(char*);
+    int headers_size = sizeof(custom_hdrv)/sizeof(char*);
 
     req_t req;
     CURL *curl = requests_init(&req);
-    requests_post_headers(curl, &req, posttestserver, NULL, resp_hdrv,
+    requests_post_headers(curl, &req, posttestserver, NULL, custom_hdrv,
                           headers_size);
 
     ASSERT_EQ(code, req.code);
     ASSERT(strcmp(req.resp_hdrv[0], "HTTP/1.1 200 OK\r\n") == 0);
+    ASSERT(strcmp(req.req_hdrv[1], "Content-Type: application/json") == 0);
     ASSERT(strstr(req.text, "Successfully") != NULL);
     ASSERT_EQ(1, req.ok);
+    ASSERT_EQ(3, req.req_hdrc);
 
     requests_close(&req);
     PASS();
@@ -149,6 +177,7 @@ TEST urlencode()
 SUITE(tests)
 {
     RUN_TEST(get);
+    RUN_TEST(get_headers);
     RUN_TEST(post);
     RUN_TEST(post_nodata);
     RUN_TEST(post_headers);
