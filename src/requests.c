@@ -184,6 +184,42 @@ CURLcode requests_get(CURL *curl, req_t *req, char *url)
     return rc;
 }
 
+CURLcode requests_get_headers(CURL *curl, req_t *req, char *url, 
+                              char **custom_hdrv, int custom_hdrc)
+{
+    CURLcode rc;
+    struct curl_slist *slist = NULL;
+    char *ua = user_agent();
+    req->url = url;
+    long code;
+
+    /* headers */
+    if (custom_hdrv != NULL) {
+        rc = process_custom_headers(&slist, req, custom_hdrv, custom_hdrc);
+        if (rc != CURLE_OK)
+            return rc;
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
+    }
+
+    common_opt(curl, req);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, resp_callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, req);
+    curl_easy_setopt(curl, CURLOPT_USERAGENT, ua);
+    rc = curl_easy_perform(curl);
+    if (rc != CURLE_OK)
+        return rc;
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
+
+    req->code = code;
+    if (slist != NULL)
+        curl_slist_free_all(slist);
+    check_ok(req);
+    curl_easy_cleanup(curl);
+    free(ua);
+
+    return rc;
+}
+
 /*
  * requests_url_encode - Url encoding function. Takes as input an array of
  * char strings and the size of the array. The array should consist of keys
@@ -248,15 +284,15 @@ CURLcode requests_put(CURL *curl, req_t *req, char *url, char *data)
 }
 
 CURLcode requests_post_headers(CURL *curl, req_t *req, char *url, char *data,
-                               char **resp_hdrv, int resp_hdrc)
+                               char **custom_hdrv, int custom_hdrc)
 {
-    return requests_pt(curl, req, url, data, resp_hdrv, resp_hdrc, 0);
+    return requests_pt(curl, req, url, data, custom_hdrv, custom_hdrc, 0);
 }
 
 CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
-                              char **resp_hdrv, int resp_hdrc)
+                              char **custom_hdrv, int custom_hdrc)
 {
-    return requests_pt(curl, req, url, data, resp_hdrv, resp_hdrc, 1);
+    return requests_pt(curl, req, url, data, custom_hdrv, custom_hdrc, 1);
 }
 
 /*

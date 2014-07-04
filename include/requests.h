@@ -52,10 +52,12 @@ void requests_close(req_t *req);
 CURLcode requests_get(CURL *curl, req_t *req, char *url);
 CURLcode requests_post(CURL *curl, req_t *req, char *url, char *data);
 CURLcode requests_put(CURL *curl, req_t *req, char *url, char *data);
+CURLcode requests_get_headers(CURL *curl, req_t *req, char *url, 
+                              char **custom_hdrv, int custom_hdrc);
 CURLcode requests_post_headers(CURL *curl, req_t *req, char *url, char *data,
-                               char **resp_hdrv, int resp_hdrc);
+                               char **custom_hdrv, int custom_hdrc);
 CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
-                              char **resp_hdrv, int resp_hdrc);
+                              char **custom_hdrv, int custom_hdrc);
 char *requests_url_encode(CURL *curl, char **data, int data_size);
 
 #endif
