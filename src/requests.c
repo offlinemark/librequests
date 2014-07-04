@@ -31,11 +31,15 @@ static int IS_FIRST = 1;
 /*
  * Prototypes
  */
-static CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
-                            char **custom_hdrv, int custom_hdrc, int put_flag);
 static void common_opt(CURL *curl, req_t *req);
 static char *user_agent(void);
 static void check_ok(req_t *req);
+static CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
+                            char **custom_hdrv, int custom_hdrc, int put_flag);
+static int hdrv_append(char ***hdrv, int *hdrc, char *new);
+static CURLcode process_custom_headers(struct curl_slist **slist,
+                                       req_t *req, char **custom_hdrv,
+                                       int custom_hdrc);
 
 /*
  * requests_init - Initializes requests struct data members
@@ -131,20 +135,14 @@ static size_t header_callback(char *content, size_t size, size_t nmemb,
                               req_t *userdata)
 {
     size_t real_size = size * nmemb;
-    size_t current_size = userdata->resp_hdrc * sizeof(char*);
 
     /* the last header is always "\r\n" which we'll intentionally skip */
     if (strcmp(content, "\r\n") == 0)
         return real_size;
 
-    userdata->resp_hdrv = realloc(userdata->resp_hdrv,
-                                  current_size + sizeof(char*));
-    if (userdata->resp_hdrv == NULL)
+    if (hdrv_append(&userdata->resp_hdrv, &userdata->resp_hdrc, content))
         return -1;
 
-    userdata->resp_hdrc++;
-    userdata->resp_hdrv[userdata->resp_hdrc - 1] = strndup(content,
-                                                           size * nmemb + 1);
     return real_size;
 }
 
@@ -267,7 +265,8 @@ CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
  * data, use NULL for data, and 0 for data_size.
  *
  * Returns CURLcode provided from curl_easy_perform. CURLE_OK is returned on
- * success.
+ * success. -1 returned if there are issues with libcurl's internal linked list
+ * append.
  *
  * Typically this function isn't used directly, use requests_post() or
  * requests_put() instead.
@@ -296,17 +295,21 @@ static CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
     } else {
         /* content length header defaults to -1, which causes request to fail
            sometimes, so we need to manually set it to 0 */
-        slist = curl_slist_append(slist, "Content-Length: 0");
+        char *cl_header = "Content-Length: 0";
+        slist = curl_slist_append(slist, cl_header);
+        if (slist == NULL)
+            return -1;
         if (custom_hdrv == NULL)
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
+
+        hdrv_append(&req->req_hdrv, &req->req_hdrc, cl_header);
     }
 
     /* headers */
     if (custom_hdrv != NULL) {
-        int i = 0;
-        for (i = 0; i < custom_hdrc; i++) {
-            slist = curl_slist_append(slist, custom_hdrv[i]);
-        }
+        rc = process_custom_headers(&slist, req, custom_hdrv, custom_hdrc);
+        if (rc != CURLE_OK)
+            return rc;
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
     }
 
@@ -337,7 +340,61 @@ static CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
 }
 
 /*
- * Utility function for executing common curl options.
+ * process_custom_headers -- Adds custom headers to request and populates the
+ * req_headerv and req_hdrc fields of the request struct using the supplied
+ * custom headers.
+ *
+ * Returns CURLE_OK on success, CURLE_OUT_OF_MEMORY if realloc failed to
+ * increase size of req_hdrv, or -1 if libcurl's linked list append fails.
+ *
+ * @slist: internal libcurl slist (string linked list)
+ * @req: request struct
+ * @custom_hdrv: char* array of custom headers
+ * @custom_hdrc: length of `custom_hdrv`
+ */
+static CURLcode process_custom_headers(struct curl_slist **slist, req_t *req,
+                                       char **custom_hdrv, int custom_hdrc)
+{
+    int i = 0;
+
+    for (i = 0; i < custom_hdrc; i++) {
+        /* add header to request */
+        *slist = curl_slist_append(*slist, custom_hdrv[i]);
+        if (*slist == NULL)
+            return -1;
+        if (hdrv_append(&req->req_hdrv, &req->req_hdrc, custom_hdrv[i]))
+            return CURLE_OUT_OF_MEMORY;
+    }
+
+    return CURLE_OK;
+}
+
+/*
+ * hdrv_append -- Append to an arbitrary char* array and increments the given
+ * array length.
+ *
+ * Returns 0 on success and -1 on memory error.
+ *
+ * @hdrv: pointer to the char* array
+ * @hdrc: length of `hdrv' (NOTE: this value gets updated)
+ * @new: char* to append
+ */
+static int hdrv_append(char ***hdrv, int *hdrc, char *new)
+{
+    size_t current_size = *hdrc * sizeof(char*);
+    *hdrv = realloc(*hdrv, current_size + sizeof(char*));
+    if (*hdrv == NULL)
+        return -1;
+    (*hdrc)++;
+    (*hdrv)[*hdrc - 1] = strndup(new, strlen(new));
+    return 0;
+}
+
+/*
+ * common_opt -- Sets common libcurl options.
+ *
+ * @curl: libcurl handle
+ * @req: request struct
  */
 static void common_opt(CURL *curl, req_t *req)
 {
@@ -349,7 +406,7 @@ static void common_opt(CURL *curl, req_t *req)
 }
 
 /*
- * user_agent - Utility function for creating custom user agent.
+ * user_agent - Creates custom user agent.
  *
  * Returns a char* containing the user agent, or NULL on failure.
  */
@@ -373,8 +430,10 @@ static char *user_agent(void)
 }
 
 /*
- * Utility function for setting "ok" struct field. Response codes of 400+
- * are considered "not ok".
+ * check_ok -- Utility function for setting "ok" struct field. Response codes
+ * of 400+ are considered "not ok".
+ *
+ * @req: request struct
  */
 static void check_ok(req_t *req)
 {
