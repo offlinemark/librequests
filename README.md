@@ -30,7 +30,7 @@ static C library that you can compile your own code against.
 #include <stdio.h>
 #include "requests.h"
 
-int main(int argc, const char *argv[])
+int main(int argc, const char **argv)
 {
     req_t req;                        /* declare struct used to store data */
     CURL *curl = requests_init(&req); /* setup */
@@ -79,17 +79,20 @@ a special struct that holds all the stuff from the request. Source below.
 
 ```
 typedef struct {
-    long code;           // Response Code
-    char *url;           // Request URL
-    char *text;          // Response Body
-    size_t size;         // Length of Body
-    char **headers;      // Character Array of Headers
-    size_t headers_size; // Length of above array
-    int ok;              // Bool value. Response codes < 400 are "ok"
+    long code;        /* Response code */
+    char *url;        /* Request URL */
+    char *text;       /* Response body */
+    size_t size;      /* Body Length */
+    char **req_hdrv;  /* Request headers */
+    int req_hdrc;     /* Number of request headers */
+    char **resp_hdrv; /* Response headers */
+    int resp_hdrc;    /* Number of response headers */
+    int ok;           /* Bool value. Response codes < 400 are "ok" */
 } req_t;
 ```
 
-At the beginning of every program that uses this library should be two lines.
+At the beginning of every program that uses this library should be two
+lines(ish).
 
 ```
 req_t req;
@@ -113,16 +116,31 @@ The data parameter of POST and PUT needs to already be url-encoded, but
 the `requests_url_encode()` function can help you with that.
 
 ```
+/* array of key-value pairs */
 char *data[] = {
-    "apple",  "red", // array of key-value pairs
+    "apple",  "red",
     "banana", "yellow"
 };
-int data_size = sizeof(data)/sizeof(char*); // recommended way to get size
-                                            // of array
+int data_size = sizeof(data)/sizeof(char*); /* recommended way to get size
+                                               of array */
 ...
 char *body = requests_url_encode(curl, data, data_size);
 requests_post(curl, &req, "http://www.posttestserver.com/post.php", body);
 ```
+
+If you want to supply custom request headers, you can use these functions:
+
+```
+CURLcode requests_get_headers(CURL *curl, req_t *req, char *url, 
+                              char **custom_hdrv, int custom_hdrc);
+CURLcode requests_post_headers(CURL *curl, req_t *req, char *url, char *data,
+                               char **custom_hdrv, int custom_hdrc);
+CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
+                              char **custom_hdrv, int custom_hdrc);
+```
+
+The last two parameters correspond to an array of the headers you want to
+provide, and the length of that array, respectively.
 
 Lastly, make sure to call the cleanup functions once you're done. If you used
 the url encode function, you'll need to separately `curl_free()` the returned
@@ -147,20 +165,5 @@ run
 $ make test
 $ ./test/test
 ```
-
-To compile with debug statements, run
-
-```bash
-$ make test-debug
-```
-
-### debugging
-
-`test.c` includes one of
-[Zed's Awesome Debug Macros](http://c.learncodethehardway.org/book/ex20.html)
-for debug statements that can easily be compiled in
-or out. In your code, simply put `DEBUG("your message");` where the accepted
-parameters are just like the ones for `printf()`.
-
 
 [![Analytics](https://ga-beacon.appspot.com/UA-36552439-3/librequests/readme)](https://github.com/igrigorik/ga-beacon)
