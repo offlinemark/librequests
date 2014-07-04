@@ -79,7 +79,9 @@ CURL *requests_init(req_t *req)
 }
 
 /*
- * Calls curl clean up and free allocated memory
+ * requests_close -- Calls curl clean up and free allocated memory
+ *
+ * @req: requests struct
  */
 void requests_close(req_t *req)
 {
@@ -97,8 +99,8 @@ void requests_close(req_t *req)
 }
 
 /*
- * Callback function for requests, may be called multiple times per request.
- * Allocates memory and assembles response data.
+ * resp_callback - Callback function for requests, may be called multiple
+ * times per request. Allocates memory and assembles response data.
  *
  * Note: `content' will not be NULL terminated.
  */
@@ -126,8 +128,10 @@ static size_t resp_callback(char *content, size_t size, size_t nmemb,
 }
 
 /*
- * Callback function for headers, called once for each header. Allocates
- * memory and assembles headers into string array.
+ * header_callback -- Callback function for headers, called once for each 
+ * header. Allocates memory and assembles headers into string array.
+ *
+ * Note: `content' will not be NULL terminated.
  */
 static size_t header_callback(char *content, size_t size, size_t nmemb,
                               req_t *userdata)
@@ -256,10 +260,10 @@ CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
 }
 
 /*
- * requests_pt - Utility function that performs POST or PUT request using
- * supplied data and populates req struct text member with request response,
- * code with response code, and size with size of response. To submit no
- * data, use NULL for data, and 0 for data_size.
+ * requests_pt - Performs POST or PUT request using supplied data and populates
+ * req struct text member with request response, code with response code, and
+ * size with size of response. To submit no data, use NULL for data, and 0 for
+ * data_size.
  *
  * Returns CURLcode provided from curl_easy_perform. CURLE_OK is returned on
  * success. -1 returned if there are issues with libcurl's internal linked list
@@ -322,7 +326,6 @@ static CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
 
     long code;
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
-
     req->code = code;
     check_ok(req);
 
@@ -363,7 +366,7 @@ static CURLcode process_custom_headers(struct curl_slist **slist, req_t *req,
 }
 
 /*
- * hdrv_append -- Append to an arbitrary char* array and increments the given
+ * hdrv_append -- Appends to an arbitrary char* array and increments the given
  * array length.
  *
  * Returns 0 on success and -1 on memory error.
@@ -374,6 +377,7 @@ static CURLcode process_custom_headers(struct curl_slist **slist, req_t *req,
  */
 static int hdrv_append(char ***hdrv, int *hdrc, char *new)
 {
+    /* current array size in bytes */
     size_t current_size = *hdrc * sizeof(char*);
     char *newdup = strndup(new, strlen(new));
     if (newdup == NULL)
@@ -413,10 +417,8 @@ static char *user_agent(void)
     uname(&name);
     char *kernel = name.sysname;
     char *version = name.release;
-
     char *ua;
     asprintf(&ua, "librequests/%s %s/%s", __LIBREQ_VERS__, kernel, version);
-
     return ua;
 }
 
