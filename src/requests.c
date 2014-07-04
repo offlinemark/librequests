@@ -83,12 +83,10 @@ CURL *requests_init(req_t *req)
  */
 void requests_close(req_t *req)
 {
-    int i = 0;
-
-    for (i = 0; i < req->resp_hdrc; i++)
+    for (int i = 0; i < req->resp_hdrc; i++)
         free(req->resp_hdrv[i]);
 
-    for (i = 0; i < req->req_hdrc; i++)
+    for (int i = 0; i < req->req_hdrc; i++)
         free(req->req_hdrv[i]);
 
     free(req->text);
@@ -163,7 +161,7 @@ CURLcode requests_get(CURL *curl, req_t *req, char *url)
     CURLcode rc;
     char *ua = user_agent();
     req->url = url;
-    long code = 0;
+    long code;
 
     common_opt(curl, req);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, resp_callback);
@@ -207,8 +205,7 @@ char *requests_url_encode(CURL *curl, char **data, int data_size)
 
     /* loop through and get total sum of lengths */
     size_t total_size = 0;
-    int i = 0;
-    for (i = 0; i < data_size; i++) {
+    for (int i = 0; i < data_size; i++) {
         tmp = data[i];
         tmp_len = strlen(tmp);
         total_size += tmp_len;
@@ -218,7 +215,7 @@ char *requests_url_encode(CURL *curl, char **data, int data_size)
     snprintf(encoded, total_size, "%s", "");
 
     /* loop in groups of two, assembling key/val pairs */
-    for (i = 0; i < data_size; i+=2) {
+    for (int i = 0; i < data_size; i+=2) {
         key = data[i];
         val = data[i+1];
         offset = i == 0 ? 2 : 3; /* =, \0 and maybe & */
@@ -283,10 +280,7 @@ static CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
                             char **custom_hdrv, int custom_hdrc, int put_flag)
 {
     CURLcode rc;
-    char *ua = user_agent();
-    char *encoded = NULL;
     struct curl_slist *slist = NULL;
-    long code = 0;
     req->url = url;
 
     /* body data */
@@ -320,17 +314,18 @@ static CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
     else
         curl_easy_setopt(curl, CURLOPT_POST, 1);
+    char *ua = user_agent();
     curl_easy_setopt(curl, CURLOPT_USERAGENT, ua);
     rc = curl_easy_perform(curl);
     if (rc != CURLE_OK)
         return rc;
+
+    long code;
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
 
     req->code = code;
     check_ok(req);
 
-    if (encoded != NULL)
-        curl_free(encoded);
     if (slist != NULL)
         curl_slist_free_all(slist);
     free(ua);
@@ -355,9 +350,7 @@ static CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
 static CURLcode process_custom_headers(struct curl_slist **slist, req_t *req,
                                        char **custom_hdrv, int custom_hdrc)
 {
-    int i = 0;
-
-    for (i = 0; i < custom_hdrc; i++) {
+    for (int i = 0; i < custom_hdrc; i++) {
         /* add header to request */
         *slist = curl_slist_append(*slist, custom_hdrv[i]);
         if (*slist == NULL)
@@ -416,19 +409,14 @@ static void common_opt(CURL *curl, req_t *req)
  */
 static char *user_agent(void)
 {
-    int ua_size = 3; /* ' ', /, \0 */
-    char *basic = "librequests/0.1", *kernel, *version, *ua;
     struct utsname name;
     uname(&name);
-    kernel = name.sysname;
-    version = name.release;
-    ua_size += (strlen(basic) + strlen(kernel) + strlen(version));
+    char *basic = "librequests/0.1";
+    char *kernel = name.sysname;
+    char *version = name.release;
 
-    ua = malloc(ua_size);
-    if (ua == NULL)
-        return NULL;
-
-    snprintf(ua, ua_size, "%s %s/%s", basic, kernel, version);
+    char *ua;
+    asprintf(&ua, "%s %s/%s", basic, kernel, version);
 
     return ua;
 }
