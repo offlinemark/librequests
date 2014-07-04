@@ -382,11 +382,15 @@ static CURLcode process_custom_headers(struct curl_slist **slist, req_t *req,
 static int hdrv_append(char ***hdrv, int *hdrc, char *new)
 {
     size_t current_size = *hdrc * sizeof(char*);
+    char *newdup = strndup(new, strlen(new));
+    if (newdup == NULL)
+        return -1;
+
     *hdrv = realloc(*hdrv, current_size + sizeof(char*));
     if (*hdrv == NULL)
         return -1;
     (*hdrc)++;
-    (*hdrv)[*hdrc - 1] = strndup(new, strlen(new));
+    (*hdrv)[*hdrc - 1] = newdup;
     return 0;
 }
 
