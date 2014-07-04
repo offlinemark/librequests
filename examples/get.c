@@ -15,12 +15,12 @@ int main(int argc, const char *argv[])
     printf("Response Code: %lu\n", req.code);
     printf("Response Size: %zu\n", req.size);
     printf("Response Headers:\n");
-    int i = 0;
-    for (i = 0; i < req.req_hdrc; i++) {
-        printf("\t %s", req.req_hdrv[i]);
+    for (int i = 0; i < req.resp_hdrc; i++) {
+        printf("\t %s", req.resp_hdrv[i]);
     }
     printf("Response Body:\n%s", req.text);
 
-    requests_close(&req); /* always do this at the end */
+    requests_close(&req); /* always do this at the end, you'll have memory
+                             leaks if you don't */
     return 0;
 }

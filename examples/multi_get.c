@@ -7,11 +7,10 @@
 
 int main(int argc, const char *argv[])
 {
-    // declare struct used to store data
-    req_t req;
-    CURL *curl = requests_init(&req); // setup
+    req_t req;                        /* declare struct used to store data */
+    CURL *curl = requests_init(&req); /* setup */
 
-    requests_get(curl, &req, "http://example.com"); // submit GET request
+    requests_get(curl, &req, "http://example.com"); /* submit GET request */
     printf("Request URL: %s\n", req.url);
     printf("Response Code: %lu\n", req.code);
     printf("Response Size: %zu\n", req.size);
@@ -26,6 +25,6 @@ int main(int argc, const char *argv[])
     printf("Response Size: %zu\n", req.size);
     printf("Response Body:\n%s", req.text);
 
-    requests_close(&req); // always do this at the end
+    requests_close(&req); /* always do this at the end */
     return 0;
 }
