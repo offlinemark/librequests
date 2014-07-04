@@ -13,16 +13,22 @@ and run `brew install curl`.
 On [Ubuntu](http://askubuntu.com/questions/78183/installing-curl-h-library)
 `sudo apt-get install libcurl4-openssl-dev` will work.
 
-## building
+## getting started
 
-Simply run
+Go to the [releases](https://github.com/mossberg/librequests/releases) page
+and download the latest `librequests-[platform].a` file available. This is a
+static C library you can compile your own code against. Rename it to
+`librequests.a` and take a look at the example below.
+
+Alternatively, you can build librequests yourself (it's pretty easy).
 
 ```bash
+$ git clone https://github.com/mossberg/librequests.git
+$ cd librequests
 $ make
 ```
 
-This will create a `build/` directory which contains, `librequests.a`, a
-static C library that you can compile your own code against.
+This will create a `build/` directory which contains, `librequests.a`.
 
 ## example
 
