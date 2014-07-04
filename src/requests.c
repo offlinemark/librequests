@@ -33,7 +33,7 @@ static int IS_FIRST = 1;
  */
 static void common_opt(CURL *curl, req_t *req);
 static char *user_agent(void);
-static void check_ok(req_t *req);
+static int check_ok(long code);
 static CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
                             char **custom_hdrv, int custom_hdrc, int put_flag);
 static int hdrv_append(char ***hdrv, int *hdrc, char *new);
@@ -177,7 +177,7 @@ CURLcode requests_get(CURL *curl, req_t *req, char *url)
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
 
     req->code = code;
-    check_ok(req);
+    req->ok = check_ok(code);
     curl_easy_cleanup(curl);
     free(ua);
 
@@ -213,7 +213,7 @@ CURLcode requests_get_headers(CURL *curl, req_t *req, char *url,
     req->code = code;
     if (slist != NULL)
         curl_slist_free_all(slist);
-    check_ok(req);
+    req->ok = check_ok(code);
     curl_easy_cleanup(curl);
     free(ua);
 
@@ -363,7 +363,7 @@ static CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
     long code;
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
     req->code = code;
-    check_ok(req);
+    req->ok = check_ok(code);
 
     if (slist != NULL)
         curl_slist_free_all(slist);
@@ -464,10 +464,10 @@ static char *user_agent(void)
  *
  * @req: request struct
  */
-static void check_ok(req_t *req)
+static int check_ok(long code)
 {
-    if (req->code >= 400 || req->code == 0)
-        req->ok = 0;
+    if (code >= 400 || code == 0)
+        return 0;
     else
-        req->ok = 1;
+        return 1;
 }
