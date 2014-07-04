@@ -79,7 +79,7 @@ CURL *requests_init(req_t *req)
 }
 
 /*
- * requests_close -- Calls curl clean up and free allocated memory
+ * requests_close - Calls curl clean up and free allocated memory
  *
  * @req: requests struct
  */
@@ -128,7 +128,7 @@ static size_t resp_callback(char *content, size_t size, size_t nmemb,
 }
 
 /*
- * header_callback -- Callback function for headers, called once for each 
+ * header_callback - Callback function for headers, called once for each 
  * header. Allocates memory and assembles headers into string array.
  *
  * Note: `content' will not be NULL terminated.
@@ -184,6 +184,19 @@ CURLcode requests_get(CURL *curl, req_t *req, char *url)
     return rc;
 }
 
+/*
+ * requests_get_headers - Performs GET request (same as above) but allows
+ * custom headers.
+ *
+ * Returns the CURLcode return code provided from curl_easy_perform. CURLE_OK
+ * is returned on success.
+ *
+ * @curl: libcurl handle
+ * @req:  request struct
+ * @url:  url to send request to
+ * @custom_hdrv: char* array of custom headers
+ * @custom_hdrc: length of `custom_hdrv`
+ */
 CURLcode requests_get_headers(CURL *curl, req_t *req, char *url, 
                               char **custom_hdrv, int custom_hdrc)
 {
@@ -374,7 +387,7 @@ static CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
 }
 
 /*
- * process_custom_headers -- Adds custom headers to request and populates the
+ * process_custom_headers - Adds custom headers to request and populates the
  * req_headerv and req_hdrc fields of the request struct using the supplied
  * custom headers.
  *
@@ -402,7 +415,7 @@ static CURLcode process_custom_headers(struct curl_slist **slist, req_t *req,
 }
 
 /*
- * hdrv_append -- Appends to an arbitrary char* array and increments the given
+ * hdrv_append - Appends to an arbitrary char* array and increments the given
  * array length.
  *
  * Returns 0 on success and -1 on memory error.
@@ -428,7 +441,7 @@ static int hdrv_append(char ***hdrv, int *hdrc, char *new)
 }
 
 /*
- * common_opt -- Sets common libcurl options.
+ * common_opt - Sets common libcurl options.
  *
  * @curl: libcurl handle
  * @req: request struct
@@ -459,7 +472,7 @@ static char *user_agent(void)
 }
 
 /*
- * check_ok -- Utility function for setting "ok" struct field. Response codes
+ * check_ok - Utility function for setting "ok" struct field. Response codes
  * of 400+ are considered "not ok".
  *
  * @req: request struct
