@@ -27,7 +27,6 @@
  * THE SOFTWARE.
  */
 
-#include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 #include <curl/curl.h>
@@ -44,7 +43,7 @@ typedef struct {
     int req_hdrc;
     char **resp_hdrv;
     int resp_hdrc;
-    int ok;
+    char ok;
 } req_t;
 
 CURL *requests_init(req_t *req);

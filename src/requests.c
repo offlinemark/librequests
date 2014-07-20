@@ -26,21 +26,19 @@
 
 #include "requests.h"
 
-static int IS_FIRST = 1;
+static char is_first = 1;
 
 /*
  * Prototypes
  */
 static void common_opt(CURL *curl, req_t *req);
 static char *user_agent(void);
-static int check_ok(long code);
+static char check_ok(long code);
 static CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
                             char **custom_hdrv, int custom_hdrc, int put_flag);
 static int hdrv_append(char ***hdrv, int *hdrc, char *new);
-static CURLcode process_custom_headers(struct curl_slist **slist,
-                                       req_t *req, char **custom_hdrv,
-                                       int custom_hdrc);
-
+static CURLcode process_custom_headers(struct curl_slist **slist, req_t *req,
+                                       char **custom_hdrv, int custom_hdrc);
 /*
  * requests_init - Initializes requests struct data members
  *
@@ -52,7 +50,7 @@ CURL *requests_init(req_t *req)
 {
 
     /* if this is not their first request, free previous memory */
-    if (!IS_FIRST)
+    if (!is_first)
         requests_close(req);
 
     req->code = 0;
@@ -74,7 +72,7 @@ CURL *requests_init(req_t *req)
     if (req->resp_hdrv == NULL)
         return NULL;
 
-    IS_FIRST = 0;
+    is_first = 0;
     return curl_easy_init();
 }
 
@@ -95,7 +93,7 @@ void requests_close(req_t *req)
     free(req->resp_hdrv);
     free(req->req_hdrv);
 
-    IS_FIRST = 1;
+    is_first = 1;
 }
 
 /*
@@ -197,7 +195,7 @@ CURLcode requests_get(CURL *curl, req_t *req, char *url)
  * @custom_hdrv: char* array of custom headers
  * @custom_hdrc: length of `custom_hdrv`
  */
-CURLcode requests_get_headers(CURL *curl, req_t *req, char *url, 
+CURLcode requests_get_headers(CURL *curl, req_t *req, char *url,
                               char **custom_hdrv, int custom_hdrc)
 {
     CURLcode rc;
@@ -477,7 +475,7 @@ static char *user_agent(void)
  *
  * @req: request struct
  */
-static int check_ok(long code)
+static char check_ok(long code)
 {
     if (code >= 400 || code == 0)
         return 0;
