@@ -110,9 +110,9 @@ static size_t resp_callback(char *content, size_t size, size_t nmemb,
                             req_t *userdata)
 {
     size_t real_size = size * nmemb;
-
-    /* extra 1 is for NULL terminator */
-    long original_userdata_size = userdata->size;
+	long original_userdata_size = userdata->size;
+	
+	/* extra 1 is for NULL terminator */
     userdata->text = realloc(userdata->text, userdata->size + real_size + 1);
     if (userdata->text == NULL)
         return -1;
@@ -121,7 +121,7 @@ static size_t resp_callback(char *content, size_t size, size_t nmemb,
 
 	/* concatenate userdata->text with the response content */
 	int i;
-	for (i = original_userdata_size; i < real_size; i++) {
+	for (i = original_userdata_size; i < original_userdata_size + real_size; i++) {
 		userdata->text[i] = content[i - original_userdata_size];
 		
 	}
