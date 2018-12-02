@@ -24,7 +24,7 @@
  * THE SOFTWARE.
  */
 
-#include "requests.h"
+//~ #include "requests.h" /// MODIFIED LINE
 
 static int IS_FIRST = 1;
 
@@ -110,20 +110,20 @@ static size_t resp_callback(char *content, size_t size, size_t nmemb,
     size_t real_size = size * nmemb;
 
     /* extra 1 is for NULL terminator */
+    long original_userdata_size = userdata->size;
     userdata->text = realloc(userdata->text, userdata->size + real_size + 1);
     if (userdata->text == NULL)
         return -1;
 
     userdata->size += real_size;
 
-    /* create NULL terminated version of `content' */
-    char *responsetext = strndup(content, real_size + 1);
-    if (responsetext == NULL)
-        return -1;
+	/* concatenate userdata->text with the response content */
+	int i;
+	for (i = original_userdata_size; i < real_size; i++) {
+		userdata->text[i] = content[i - original_userdata_size];
+		
+	}
 
-    strncat(userdata->text, responsetext, real_size);
-
-    free(responsetext);
     return real_size;
 }
 
