@@ -24,7 +24,9 @@
  * THE SOFTWARE.
  */
 
-//~ #include "requests.h" /// MODIFIED LINE
+#ifndef __OMIT_INCLUSION_OF_REQUESTS_HEADER__
+	#include "requests.h"
+#endif
 
 static int IS_FIRST = 1;
 
