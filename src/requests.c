@@ -24,10 +24,7 @@
  * THE SOFTWARE.
  */
 
-#ifndef __OMIT_INCLUSION_OF_REQUESTS_HEADER__
-	#include "requests.h"
-#endif
-
+#include "requests.h"
 static int IS_FIRST = 1;
 
 /*
@@ -120,11 +117,13 @@ static size_t resp_callback(char *content, size_t size, size_t nmemb,
     userdata->size += real_size;
 
 	/* concatenate userdata->text with the response content */
-	int i;
+	memcpy(userdata->text + original_userdata_size, content, real_size);
+	
+	/*int i;
 	for (i = original_userdata_size; i < original_userdata_size + real_size; i++) {
 		userdata->text[i] = content[i - original_userdata_size];
 		
-	}
+	}*/
 
     return real_size;
 }
