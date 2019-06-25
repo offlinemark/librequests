@@ -173,7 +173,6 @@ CURLcode requests_get(CURL *curl, req_t *req, char *url)
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, resp_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, req);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, ua);
-    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
     rc = curl_easy_perform(curl);
     if (rc != CURLE_OK)
         return rc;
@@ -456,6 +455,7 @@ static void common_opt(CURL *curl, req_t *req)
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, req);
     curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, header_callback);
     curl_easy_setopt(curl, CURLOPT_HEADERDATA, req);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
 }
 
 /*
