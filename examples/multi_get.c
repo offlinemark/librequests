@@ -8,18 +8,24 @@
 int main(int argc, const char *argv[])
 {
     req_t req;                        /* declare struct used to store data */
-    CURL *curl = requests_init(&req); /* setup */
+    int ret = requests_init(&req); /* setup */
+    if (ret) {
+        return 1;
+    }
 
-    requests_get(curl, &req, "http://example.com"); /* submit GET request */
+    requests_get(&req, "http://example.com"); /* submit GET request */
     printf("Request URL: %s\n", req.url);
     printf("Response Code: %lu\n", req.code);
     printf("Response Size: %zu\n", req.size);
     printf("Response Body:\n%s", req.text);
 
+    requests_close(&req);
+
     puts("---");
 
-    curl = requests_init(&req);
-    requests_get(curl, &req, "http://google.com");
+    // leaked the curl
+    ret = requests_init(&req);
+    requests_get(&req, "http://google.com");
     printf("Request URL: %s\n", req.url);
     printf("Response Code: %lu\n", req.code);
     printf("Response Size: %zu\n", req.size);
