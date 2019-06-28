@@ -13,6 +13,8 @@ and run `brew install curl`.
 On [Ubuntu](http://askubuntu.com/questions/78183/installing-curl-h-library)
 `sudo apt-get install libcurl4-openssl-dev` will work.
 
+CMake is also needed for the build.
+
 ## getting started
 
 Go to the [releases](https://github.com/mossberg/librequests/releases) page
@@ -23,12 +25,14 @@ static C library you can compile your own code against. Rename it to
 Alternatively, you can build librequests yourself (it's pretty easy).
 
 ```bash
-$ git clone https://github.com/mossberg/librequests.git
-$ cd librequests
-$ make
+git clone https://github.com/mossberg/librequests.git
+cd librequests
+mkdir build && cd build
+cmake ..
+cmake --build .
 ```
 
-This will create a `build/` directory which contains, `librequests.a`.
+The build library will be in `build/src`.
 
 ## example
 
@@ -38,10 +42,13 @@ This will create a `build/` directory which contains, `librequests.a`.
 
 int main(int argc, const char **argv)
 {
-    req_t req;                        /* declare struct used to store data */
-    CURL *curl = requests_init(&req); /* setup */
+    req_t req;                     /* declare struct used to store data */
+    int ret = requests_init(&req); /* setup */
+    if (ret) {
+        return 1;
+    }
 
-    requests_get(curl, &req, "http://example.com"); /* submit GET request */
+    requests_get(&req, "http://example.com"); /* submit GET request */
     printf("Request URL: %s\n", req.url);
     printf("Response Code: %lu\n", req.code);
     printf("Response Body:\n%s", req.text);
@@ -102,20 +109,20 @@ lines(ish).
 
 ```
 req_t req;
-CURL *curl = requests_init(&req);
+int ret = requests_init(&req);
+if (ret) {
+    // perform error handling
+}
 ```
 
-The first line declares the `req_t` struct. The second line gets everything
-set up and returns the curl handle that libcurl needs, which needs to be
-passed into future functions.
-
-At this point you're all set to actually make requests using the core
-functions:
+The first line declares the `req_t` struct, and the second line performs
+initialization.  At this point you're all set to actually make requests using
+the core functions:
 
 ```
-void requests_get(CURL *curl, req_t *req, char *url);
-void requests_post(CURL *curl, req_t *req, char *url, char *data);
-void requests_put(CURL *curl, req_t *req, char *url, char *data);
+void requests_get(req_t *req, char *url);
+void requests_post(req_t *req, char *url, char *data);
+void requests_put(req_t *req, char *url, char *data);
 ```
 
 The data parameter of POST and PUT needs to already be url-encoded, but
@@ -130,18 +137,18 @@ char *data[] = {
 int data_size = sizeof(data)/sizeof(char*); /* recommended way to get size
                                                of array */
 ...
-char *body = requests_url_encode(curl, data, data_size);
-requests_post(curl, &req, "http://www.posttestserver.com/post.php", body);
+char *body = requests_url_encode(&req, data, data_size);
+requests_post(&req, "http://www.posttestserver.com/post.php", body);
 ```
 
 If you want to supply custom request headers, you can use these functions:
 
 ```
-CURLcode requests_get_headers(CURL *curl, req_t *req, char *url, 
+CURLcode requests_get_headers(req_t *req, char *url, 
                               char **custom_hdrv, int custom_hdrc);
-CURLcode requests_post_headers(CURL *curl, req_t *req, char *url, char *data,
+CURLcode requests_post_headers(req_t *req, char *url, char *data,
                                char **custom_hdrv, int custom_hdrc);
-CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
+CURLcode requests_put_headers(req_t *req, char *url, char *data,
                               char **custom_hdrv, int custom_hdrc);
 ```
 
@@ -164,11 +171,10 @@ Feel free to fork this repo and tackle some of the
 ### tests
 
 librequests uses the [greatest](https://github.com/silentbicycle/greatest) C
-unit testing library, written by Scott Vokes. To compile and run tests, just
-run
+unit testing library, written by Scott Vokes. To compile and run tests, build
+librequests, and within the build directory run:
 
 ```bash
-$ make test
 $ ./test/test
 ```
 
