@@ -1,5 +1,4 @@
 function(requestsMain)
-    generateRequestsHeaders()
 
     add_library(requests
 
@@ -7,6 +6,8 @@ function(requestsMain)
         )
 
     target_link_libraries(requests PUBLIC requests_headers)
+
+    generateRequestsHeaders()
 
 endfunction()
 

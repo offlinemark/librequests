@@ -1,20 +1,10 @@
-add_executable(
-    get
+function(add_example_executable name)
+    add_executable(${name} ${name}.c)
 
-    get.c
-    )
-target_link_libraries(get requests curl)
+    target_link_libraries(${name} requests curl)
 
-add_executable(
-   multi_get 
+endfunction()
 
-   multi_get.c
-    )
-target_link_libraries(multi_get requests curl)
-
-add_executable(
-   post 
-
-   post.c
-    )
-target_link_libraries(post requests curl)
+add_example_executable(get)
+add_example_executable(multi_get)
+add_example_executable(post)
