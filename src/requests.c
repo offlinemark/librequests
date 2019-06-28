@@ -62,16 +62,22 @@ int requests_init(req_t *req)
 
     req->req_hdrv = calloc(1, 1);
     if (req->req_hdrv == NULL) {
+        free(req->text);
         goto fail;
     }
 
     req->resp_hdrv = calloc(1, 1);
     if (req->resp_hdrv == NULL) {
+        free(req->text);
+        free(req->req_hdrv);
         goto fail;
     }
 
     req->curlhandle = curl_easy_init();
     if (req->curlhandle == NULL) {
+        free(req->text);
+        free(req->req_hdrv);
+        free(req->resp_hdrv);
         goto fail;
     }
 
@@ -182,7 +188,6 @@ CURLcode requests_get(req_t *req, char *url)
 
     req->code = code;
     req->ok = check_ok(code);
-    curl_easy_cleanup(curl);
     free(ua);
 
     return rc;
@@ -231,7 +236,6 @@ CURLcode requests_get_headers(req_t *req, char *url,
     if (slist != NULL)
         curl_slist_free_all(slist);
     req->ok = check_ok(code);
-    curl_easy_cleanup(curl);
     free(ua);
 
     return rc;
@@ -386,7 +390,6 @@ static CURLcode requests_pt(req_t *req, char *url, char *data,
     if (slist != NULL)
         curl_slist_free_all(slist);
     free(ua);
-    curl_easy_cleanup(curl);
 
     return rc;
 }
