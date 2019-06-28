@@ -5,7 +5,7 @@ function(requestsMain)
         requests.c
         )
 
-    target_link_libraries(requests PUBLIC requests_headers)
+    target_link_libraries(requests PUBLIC requests_headers curl)
 
     generateRequestsHeaders()
 

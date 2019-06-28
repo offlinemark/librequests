@@ -7,4 +7,4 @@ add_executable(
     test.c
     )
 
-target_link_libraries(test greatest_headers requests curl)
+target_link_libraries(test greatest_headers requests)
