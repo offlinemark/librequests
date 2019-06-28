@@ -2,10 +2,10 @@
 #include "requests.h"
 #include "greatest.h"
 
-#ifdef _DEBUG_
-# define DEBUG(M, ...) fprintf(stderr, "DEBUG %s:%d: " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
-#else
+#ifdef NDEBUG
 # define DEBUG(M, ...)
+#else
+# define DEBUG(M, ...) fprintf(stderr, "DEBUG %s:%d: " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #endif
 
 char *example = "https://gist.githubusercontent.com/mossberg/91093537c33e69e4da2c/raw/librequests_test.txt";
@@ -26,8 +26,11 @@ TEST get()
     size_t size = 33;
 
     req_t req;
-    CURL *curl = requests_init(&req);
-    requests_get(curl, &req, example);
+    int ret = requests_init(&req);
+    if (ret) {
+        FAIL();
+    }
+    requests_get(&req, example);
 
     ASSERT_EQ(code, req.code);
     ASSERT_EQ(size, req.size);
@@ -50,8 +53,8 @@ TEST get_headers()
     int headers_size = sizeof(custom_hdrv)/sizeof(char*);
 
     req_t req;
-    CURL *curl = requests_init(&req);
-    requests_get_headers(curl, &req, example, custom_hdrv, headers_size);
+    int ret = requests_init(&req);
+    requests_get_headers(&req, example, custom_hdrv, headers_size);
 
     ASSERT_EQ(code, req.code);
     ASSERT_EQ(size, req.size);
@@ -75,9 +78,9 @@ TEST post()
     int data_size = sizeof(data)/sizeof(char*);
 
     req_t req;
-    CURL *curl = requests_init(&req);
-    char *body = requests_url_encode(curl, data, data_size);
-    requests_post(curl, &req, posttestserver, body);
+    int ret = requests_init(&req);
+    char *body = requests_url_encode(&req, data, data_size);
+    requests_post(&req, posttestserver, body);
 
     ASSERT_EQ(code, req.code);
     ASSERT(strcmp(req.resp_hdrv[0], "HTTP/1.1 200 OK\r\n") == 0);
@@ -94,8 +97,8 @@ TEST post_nodata()
     long code = 200;
 
     req_t req;
-    CURL *curl = requests_init(&req);
-    requests_post(curl, &req, posttestserver, NULL);
+    int ret = requests_init(&req);
+    requests_post(&req, posttestserver, NULL);
 
     ASSERT_EQ(code, req.code);
     ASSERT(strcmp(req.resp_hdrv[0], "HTTP/1.1 200 OK\r\n") == 0);
@@ -116,8 +119,8 @@ TEST post_headers()
     int headers_size = sizeof(custom_hdrv)/sizeof(char*);
 
     req_t req;
-    CURL *curl = requests_init(&req);
-    requests_post_headers(curl, &req, posttestserver, NULL, custom_hdrv,
+    int ret = requests_init(&req);
+    requests_post_headers(&req, posttestserver, NULL, custom_hdrv,
                           headers_size);
 
     ASSERT_EQ(code, req.code);
@@ -141,9 +144,9 @@ TEST put()
     int data_size = sizeof(data)/sizeof(char*);
 
     req_t req;
-    CURL *curl = requests_init(&req);
-    char *body = requests_url_encode(curl, data, data_size);
-    requests_put(curl, &req, posttestserver, body);
+    int ret = requests_init(&req);
+    char *body = requests_url_encode(&req, data, data_size);
+    requests_put(&req, posttestserver, body);
 
     ASSERT_EQ(code, req.code);
     ASSERT(strcmp(req.resp_hdrv[0], "HTTP/1.1 200 OK\r\n") == 0);
@@ -157,19 +160,20 @@ TEST put()
 
 TEST urlencode()
 {
-    CURL *curl = curl_easy_init();
+    req_t req;
+    int ret = requests_init(&req);
     char *data[] = {
         "apple", "red",
         "banana", "yellow"
     };
     int data_size = sizeof(data)/sizeof(char*);
     char *ideal = "apple%3Dred%26banana%3Dyellow";
-    char *test = requests_url_encode(curl, data, data_size);
+    char *test = requests_url_encode(&req, data, data_size);
 
     ASSERT(strcmp(ideal, test) == 0);
 
     curl_free(test);
-    curl_easy_cleanup(curl);
+    requests_close(&req);
 
     PASS();
 }
@@ -189,6 +193,8 @@ GREATEST_MAIN_DEFS();
 
 int main(int argc, char **argv)
 {
+    DEBUG("Compiled with debug.");
+
     GREATEST_MAIN_BEGIN();
     RUN_SUITE(tests);
     GREATEST_MAIN_END();

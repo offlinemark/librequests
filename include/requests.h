@@ -36,6 +36,7 @@
 #define __LIBREQ_VERS__ "v0.2"
 
 typedef struct {
+    CURL* curlhandle;
     long code;
     char *url;
     char *text;
@@ -47,17 +48,17 @@ typedef struct {
     int ok;
 } req_t;
 
-CURL *requests_init(req_t *req);
+int requests_init(req_t *req);
 void requests_close(req_t *req);
-CURLcode requests_get(CURL *curl, req_t *req, char *url);
-CURLcode requests_post(CURL *curl, req_t *req, char *url, char *data);
-CURLcode requests_put(CURL *curl, req_t *req, char *url, char *data);
-CURLcode requests_get_headers(CURL *curl, req_t *req, char *url, 
+CURLcode requests_get(req_t *req, char *url);
+CURLcode requests_post(req_t *req, char *url, char *data);
+CURLcode requests_put(req_t *req, char *url, char *data);
+CURLcode requests_get_headers(req_t *req, char *url, 
                               char **custom_hdrv, int custom_hdrc);
-CURLcode requests_post_headers(CURL *curl, req_t *req, char *url, char *data,
+CURLcode requests_post_headers(req_t *req, char *url, char *data,
                                char **custom_hdrv, int custom_hdrc);
-CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
+CURLcode requests_put_headers(req_t *req, char *url, char *data,
                               char **custom_hdrv, int custom_hdrc);
-char *requests_url_encode(CURL *curl, char **data, int data_size);
+char *requests_url_encode(req_t *req, char **data, int data_size);
 
 #endif

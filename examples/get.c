@@ -8,9 +8,12 @@
 int main(int argc, const char *argv[])
 {
     req_t req;                        /* declare struct to store data */
-    CURL *curl = requests_init(&req); /* setup */
+    int ret = requests_init(&req); /* setup */
+    if (ret) {
+        return 1;
+    }
 
-    requests_get(curl, &req, "http://example.com"); /* submit GET request */
+    requests_get(&req, "http://example.com"); /* submit GET request */
     printf("Request URL: %s\n", req.url);
     printf("Response Code: %lu\n", req.code);
     printf("Response Size: %zu\n", req.size);
