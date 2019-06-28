@@ -120,9 +120,9 @@ initialization.  At this point you're all set to actually make requests using
 the core functions:
 
 ```
-void requests_get(req_t *req, char *url);
-void requests_post(req_t *req, char *url, char *data);
-void requests_put(req_t *req, char *url, char *data);
+CURLcode requests_get(req_t *req, char *url);
+CURLcode requests_post(req_t *req, char *url, char *data);
+CURLcode requests_put(req_t *req, char *url, char *data);
 ```
 
 The data parameter of POST and PUT needs to already be url-encoded, but
