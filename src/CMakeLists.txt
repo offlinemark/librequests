@@ -12,7 +12,7 @@ endfunction()
 
 function(generateRequestsHeaders)
     add_library(requests_headers INTERFACE)
-    target_include_directories(requests_headers INTERFACE ../include)
+    target_include_directories(requests_headers INTERFACE "${CMAKE_SOURCE_DIR}/include")
 endfunction()
 
 requestsMain()
