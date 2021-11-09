@@ -25,15 +25,14 @@
  */
 
 #include "requests.h"
-static int IS_FIRST = 1;
 
 /*
  * Prototypes
  */
-static void common_opt(CURL *curl, req_t *req);
+static void common_opt(req_t *req);
 static char *user_agent(void);
 static int check_ok(long code);
-static CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
+static CURLcode requests_pt(req_t *req, char *url, char *data,
                             char **custom_hdrv, int custom_hdrc, int put_flag);
 static int hdrv_append(char ***hdrv, int *hdrc, char *_new);
 static CURLcode process_custom_headers(struct curl_slist **slist,
@@ -43,17 +42,12 @@ static CURLcode process_custom_headers(struct curl_slist **slist,
 /*
  * requests_init - Initializes requests struct data members
  *
- * Returns libcurl handle on success, or NULL on failure.
+ * Returns 0 on success, or -1 on failure.
  *
  * @req: reference to req_t to be initialized
  */
-CURL *requests_init(req_t *req)
+int requests_init(req_t *req)
 {
-
-    /* if this is not their first request, free previous memory */
-    if (!IS_FIRST)
-        requests_close(req);
-
     req->code = 0;
     req->url = NULL;
     req->size = 0;
@@ -61,20 +55,36 @@ CURL *requests_init(req_t *req)
     req->resp_hdrc = 0;
     req->ok = -1;
 
-    req->text = (char*) calloc(1, 1);
-    if (req->text == NULL)
-        return NULL;
+    req->text = calloc(1, 1);
+    if (req->text == NULL){
+        goto fail;
+    }
 
-    req->req_hdrv = (char**) calloc(1, 1);
-    if (req->req_hdrv == NULL)
-        return NULL;
+    req->req_hdrv = calloc(1, 1);
+    if (req->req_hdrv == NULL) {
+        free(req->text);
+        goto fail;
+    }
 
-    req->resp_hdrv = (char**) calloc(1, 1);
-    if (req->resp_hdrv == NULL)
-        return NULL;
+    req->resp_hdrv = calloc(1, 1);
+    if (req->resp_hdrv == NULL) {
+        free(req->text);
+        free(req->req_hdrv);
+        goto fail;
+    }
 
-    IS_FIRST = 0;
-    return curl_easy_init();
+    req->curlhandle = curl_easy_init();
+    if (req->curlhandle == NULL) {
+        free(req->text);
+        free(req->req_hdrv);
+        free(req->resp_hdrv);
+        goto fail;
+    }
+
+    return 0;
+
+fail:
+    return -1;
 }
 
 /*
@@ -94,7 +104,7 @@ void requests_close(req_t *req)
     free(req->resp_hdrv);
     free(req->req_hdrv);
 
-    IS_FIRST = 1;
+    curl_easy_cleanup(req->curlhandle);
 }
 
 /*
@@ -149,18 +159,19 @@ static size_t header_callback(char *content, size_t size, size_t nmemb,
  * Returns the CURLcode return code provided from curl_easy_perform. CURLE_OK
  * is returned on success.
  *
- * @curl: libcurl handle
  * @req:  request struct
  * @url:  url to send request to
  */
-CURLcode requests_get(CURL *curl, req_t *req, char *url)
+CURLcode requests_get(req_t *req, char *url)
 {
     CURLcode rc;
     char *ua = user_agent();
     req->url = url;
     long code;
+    CURL *curl = req->curlhandle;
 
-    common_opt(curl, req);
+
+    common_opt(req);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, resp_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, req);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, ua);
@@ -171,7 +182,6 @@ CURLcode requests_get(CURL *curl, req_t *req, char *url)
 
     req->code = code;
     req->ok = check_ok(code);
-    curl_easy_cleanup(curl);
     free(ua);
 
     return rc;
@@ -184,13 +194,12 @@ CURLcode requests_get(CURL *curl, req_t *req, char *url)
  * Returns the CURLcode return code provided from curl_easy_perform. CURLE_OK
  * is returned on success.
  *
- * @curl: libcurl handle
  * @req:  request struct
  * @url:  url to send request to
  * @custom_hdrv: char* array of custom headers
  * @custom_hdrc: length of `custom_hdrv`
  */
-CURLcode requests_get_headers(CURL *curl, req_t *req, char *url, 
+CURLcode requests_get_headers(req_t *req, char *url, 
                               char **custom_hdrv, int custom_hdrc)
 {
     CURLcode rc;
@@ -198,6 +207,7 @@ CURLcode requests_get_headers(CURL *curl, req_t *req, char *url,
     char *ua = user_agent();
     req->url = url;
     long code;
+    CURL *curl = req->curlhandle;
 
     /* headers */
     if (custom_hdrv != NULL) {
@@ -207,7 +217,7 @@ CURLcode requests_get_headers(CURL *curl, req_t *req, char *url,
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
     }
 
-    common_opt(curl, req);
+    common_opt(req);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, resp_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, req);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, ua);
@@ -220,7 +230,6 @@ CURLcode requests_get_headers(CURL *curl, req_t *req, char *url,
     if (slist != NULL)
         curl_slist_free_all(slist);
     req->ok = check_ok(code);
-    curl_easy_cleanup(curl);
     free(ua);
 
     return rc;
@@ -233,18 +242,19 @@ CURLcode requests_get_headers(CURL *curl, req_t *req, char *url,
  * an even number of array elements (one value for every key).
  *
  * Returns pointer to url encoded string if successful, or NULL if
- * unsuccessful.
+ * unsuccessful. Returned pointer must be free'd with `curl_free`
  *
- * @curl:      libcurl handle
+ * @req:  request struct
  * @data:      char* array as described above
  * @data-size: length of array
  */
-char *requests_url_encode(CURL *curl, char **data, int data_size)
+char *requests_url_encode(req_t *req, char **data, int data_size)
 {
     char *key, *val, *tmp;
     int offset;
     size_t term_size;
     size_t tmp_len;
+    CURL *curl = req->curlhandle;
 
     if (data_size % 2 != 0)
         return NULL;
@@ -279,26 +289,26 @@ char *requests_url_encode(CURL *curl, char **data, int data_size)
     return full_encoded;
 }
 
-CURLcode requests_post(CURL *curl, req_t *req, char *url, char *data)
+CURLcode requests_post(req_t *req, char *url, char *data)
 {
-    return requests_pt(curl, req, url, data, NULL, 0, 0);
+    return requests_pt(req, url, data, NULL, 0, 0);
 }
 
-CURLcode requests_put(CURL *curl, req_t *req, char *url, char *data)
+CURLcode requests_put(req_t *req, char *url, char *data)
 {
-    return requests_pt(curl, req, url, data, NULL, 0, 1);
+    return requests_pt(req, url, data, NULL, 0, 1);
 }
 
-CURLcode requests_post_headers(CURL *curl, req_t *req, char *url, char *data,
+CURLcode requests_post_headers(req_t *req, char *url, char *data,
                                char **custom_hdrv, int custom_hdrc)
 {
-    return requests_pt(curl, req, url, data, custom_hdrv, custom_hdrc, 0);
+    return requests_pt(req, url, data, custom_hdrv, custom_hdrc, 0);
 }
 
-CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
+CURLcode requests_put_headers(req_t *req, char *url, char *data,
                               char **custom_hdrv, int custom_hdrc)
 {
-    return requests_pt(curl, req, url, data, custom_hdrv, custom_hdrc, 1);
+    return requests_pt(req, url, data, custom_hdrv, custom_hdrc, 1);
 }
 
 /*
@@ -314,7 +324,6 @@ CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
  * Typically this function isn't used directly, use requests_post() or
  * requests_put() instead.
  *
- * @curl: libcurl handle
  * @req: request struct
  * @url: url to send request to
  * @data: url encoded data to send in request body
@@ -322,12 +331,13 @@ CURLcode requests_put_headers(CURL *curl, req_t *req, char *url, char *data,
  * @custom_hdrc: length of `custom_hdrv`
  * @put_flag: if not zero, sends PUT request, otherwise uses POST
  */
-static CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
+static CURLcode requests_pt(req_t *req, char *url, char *data,
                             char **custom_hdrv, int custom_hdrc, int put_flag)
 {
     CURLcode rc;
     struct curl_slist *slist = NULL;
     req->url = url;
+    CURL *curl = req->curlhandle;
 
     /* body data */
     if (data != NULL) {
@@ -353,7 +363,7 @@ static CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, slist);
     }
 
-    common_opt(curl, req);
+    common_opt(req);
     if (put_flag)
         /* use custom request instead of dedicated PUT, because dedicated
            PUT doesn't work with arbitrary request body data */
@@ -374,7 +384,6 @@ static CURLcode requests_pt(CURL *curl, req_t *req, char *url, char *data,
     if (slist != NULL)
         curl_slist_free_all(slist);
     free(ua);
-    curl_easy_cleanup(curl);
 
     return rc;
 }
@@ -439,8 +448,9 @@ static int hdrv_append(char ***hdrv, int *hdrc, char *_new)
  * @curl: libcurl handle
  * @req: request struct
  */
-static void common_opt(CURL *curl, req_t *req)
+static void common_opt(req_t *req)
 {
+    CURL *curl = req->curlhandle;
     curl_easy_setopt(curl, CURLOPT_URL, req->url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, resp_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, req);
