@@ -470,8 +470,13 @@ static char *user_agent(void)
     uname(&name);
     char *kernel = name.sysname;
     char *version = name.release;
-    char *ua;
-    asprintf(&ua, "librequests/%s %s/%s", __LIBREQ_VERS__, kernel, version);
+
+	const char* fmt = "librequests/%s %s/%s";
+	size_t len = snprintf(NULL, 0, fmt, __LIBREQ_VERS__, kernel, version);
+
+    char *ua = malloc(len + 1);
+    snprintf(ua, len + 1, fmt, __LIBREQ_VERS__, kernel, version);
+
     return ua;
 }
 
