@@ -346,7 +346,7 @@ static CURLcode requests_pt(req_t *req, char *url, char *data,
     } else {
         /* content length header defaults to -1, which causes request to fail
            sometimes, so we need to manually set it to 0 */
-        char *cl_header = (char*) "Content-Length: 0";
+        char *cl_header = "Content-Length: 0";
         slist = curl_slist_append(slist, cl_header);
         if (slist == NULL)
             return (CURLcode) -1;
