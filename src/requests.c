@@ -127,6 +127,7 @@ static size_t resp_callback(char *content, size_t size, size_t nmemb,
     userdata->size += real_size;
 	/* concatenate userdata->text with the response content */
 	memcpy(userdata->text + original_userdata_size, content, real_size);
+	userdata->text[original_userdata_size + real_size] = '\0';
     return real_size;
 }
 
