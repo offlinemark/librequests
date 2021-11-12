@@ -117,17 +117,17 @@ static size_t resp_callback(char *content, size_t size, size_t nmemb,
                             req_t *userdata)
 {
     size_t real_size = size * nmemb;
-	long original_userdata_size = userdata->size;
-	
-	/* extra 1 is for NULL terminator */
+    long original_userdata_size = userdata->size;
+
+    /* extra 1 is for NULL terminator */
     userdata->text = (char*) realloc(userdata->text, userdata->size + real_size + 1);
     if (userdata->text == NULL)
         return -1;
 
     userdata->size += real_size;
-	/* concatenate userdata->text with the response content */
-	memcpy(userdata->text + original_userdata_size, content, real_size);
-	userdata->text[original_userdata_size + real_size] = '\0';
+    /* concatenate userdata->text with the response content */
+    memcpy(userdata->text + original_userdata_size, content, real_size);
+    userdata->text[original_userdata_size + real_size] = '\0';
     return real_size;
 }
 
@@ -472,8 +472,8 @@ static char *user_agent(void)
     char *kernel = name.sysname;
     char *version = name.release;
 
-	const char* fmt = "librequests/%s %s/%s";
-	size_t len = snprintf(NULL, 0, fmt, __LIBREQ_VERS__, kernel, version);
+    const char* fmt = "librequests/%s %s/%s";
+    size_t len = snprintf(NULL, 0, fmt, __LIBREQ_VERS__, kernel, version);
 
     char *ua = malloc(len + 1);
     snprintf(ua, len + 1, fmt, __LIBREQ_VERS__, kernel, version);
